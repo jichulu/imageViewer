@@ -1,0 +1,14 @@
+{
+  "name": "image-viewer",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.json && npm run build:css",
+    "build:css": "sass src/image-viewer.scss dist/image-viewer.css --no-source-map",
+    "dev": "tsc --watch --project tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "sass": "^1.77.0"
+  }
+}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>ImageViewer Demo</title>
+  <link rel="stylesheet" href="dist/image-viewer.css" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; line-height: 1.5; }
+    .grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;}
+    .grid img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:6px;}
+  </style>
+</head>
+<body>
+  <h1>ImageViewer 示例</h1>
+  <p>点击下方任意图片打开查看器。支持：缩略图、拖拽、滚轮缩放、旋转、键盘 ← → ESC。下方演示动态添加图片。</p>
+  <button id="add-one">追加一张图片</button>
+  <button id="add-batch">每秒追加</button>
+  <button id="stop-batch">停止追加</button>
+  <hr/>
+  <div class="grid" id="gallery">
+    <img src="https://picsum.photos/id/1015/400/400" alt="Image 1" />
+    <img src="https://picsum.photos/id/1025/400/400" alt="Image 2" />
+    <img src="https://picsum.photos/id/1035/400/400" alt="Image 3" />
+    <img src="https://picsum.photos/id/1045/400/400" alt="Image 4" />
+    <img src="https://picsum.photos/id/1055/400/400" alt="Image 5" />
+    <img src="https://picsum.photos/id/1065/400/400" alt="Image 6" />
+  </div>
+  <script type="module">
+    import { createImageViewer } from './dist/viewer.js';
+    createImageViewer({ scope: '#gallery' });
+
+    const gallery = document.getElementById('gallery');
+    let seed = 2000;
+    function addImage(){
+      const id = (seed++ % 1000) + 1; // picsum id 范围演示
+      const img = document.createElement('img');
+      img.src = `https://picsum.photos/id/${id}/400/400`;
+      img.alt = 'Dynamic ' + id;
+      gallery.appendChild(img);
+    }
+    document.getElementById('add-one').addEventListener('click', addImage);
+    let timer = null;
+    document.getElementById('add-batch').addEventListener('click', ()=>{
+      if (timer) return;
+      addImage();
+      timer = setInterval(addImage, 1000);
+    });
+    document.getElementById('stop-batch').addEventListener('click', ()=>{
+      if (timer){ clearInterval(timer); timer = null; }
+    });
+  </script>
+</body>
+</html>

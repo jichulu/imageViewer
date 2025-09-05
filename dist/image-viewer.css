@@ -1,0 +1,205 @@
+@charset "UTF-8";
+:root {
+  /* CSS 变量：对外仍使用变量方便主题覆盖 */
+  --iv-backdrop: rgba(0,0,0,.85);
+  --iv-gap: 16px;
+  --iv-radius: 4px;
+  --iv-color: #fff;
+  --iv-accent: #3b82f6;
+  --iv-accent-hover: #2563eb;
+  --iv-z: 9999;
+  font-family: system-ui, sans-serif;
+}
+
+.iv-hidden {
+  display: none !important;
+}
+
+.iv-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--iv-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--iv-z);
+  padding: clamp(8px, 2vw, 40px);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.iv-backdrop.iv-active {
+  opacity: 1;
+}
+.iv-backdrop.iv-leave {
+  opacity: 0;
+}
+.iv-backdrop.iv-active .iv-shell {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+.iv-backdrop.iv-leave .iv-shell {
+  transform: scale(0.94) translateY(10px);
+  opacity: 0;
+}
+
+.iv-shell {
+  position: relative;
+  max-width: min(92vw, 1400px);
+  max-height: 92vh;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--iv-gap);
+  color: var(--iv-color);
+  transform: scale(0.94) translateY(10px);
+  opacity: 0;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s;
+}
+
+.iv-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  background: #111;
+  border-radius: var(--iv-radius);
+}
+.iv-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: transform 0.25s ease;
+}
+
+.iv-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #334155;
+  color: #fff;
+  width: 46px;
+  height: 70px;
+  font-size: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+  padding: 0;
+  line-height: 1;
+}
+.iv-nav-btn:hover {
+  background: rgba(17, 17, 17, 0.8);
+}
+.iv-nav-btn-left {
+  left: 8px;
+}
+.iv-nav-btn-right {
+  right: 8px;
+}
+
+.iv-controls {
+  position: absolute;
+  top: 8px;
+  right: 52px;
+  display: flex;
+  gap: 6px;
+}
+.iv-controls button {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #fff;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.iv-controls button:hover {
+  background: #334155;
+}
+
+.iv-counter {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: 12px;
+  opacity: 0.85;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px;
+  border-radius: var(--iv-radius);
+}
+
+.iv-thumbs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px;
+  background: #0f172a;
+  border-radius: var(--iv-radius);
+}
+.iv-thumbs img {
+  height: 54px;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border: 2px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: 0.2s;
+}
+.iv-thumbs img[data-active=true] {
+  border-color: var(--iv-accent);
+  opacity: 1;
+}
+
+.iv-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #334155;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  padding: 0;
+}
+.iv-close:hover {
+  background: #111;
+}
+
+.iv-zoom-indicator {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px;
+  border-radius: var(--iv-radius);
+}
+
+.iv-error {
+  color: #f87171;
+  font-size: 14px;
+  text-align: center;
+  padding: 12px;
+}
+
+body.iv-lock {
+  overflow: hidden;
+}

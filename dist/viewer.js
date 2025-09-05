@@ -127,11 +127,6 @@ export class ImageViewer {
         const zoomIndicator = document.createElement('div');
         zoomIndicator.className = 'iv-zoom-indicator';
         stage.appendChild(zoomIndicator);
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'iv-close';
-        closeBtn.innerHTML = '&#10005;';
-        closeBtn.addEventListener('click', () => this.close());
-        shell.appendChild(closeBtn);
         const counter = document.createElement('div');
         counter.className = 'iv-counter';
         stage.appendChild(counter);
@@ -378,6 +373,8 @@ export class ImageViewer {
             (_b = (_a = this.options).onClose) === null || _b === void 0 ? void 0 : _b.call(_a);
         };
         bd.addEventListener('transitionend', done);
+        // Reset transform
+        this.resetTransform(true);
     }
     destroy() {
         const mo = this._mo;

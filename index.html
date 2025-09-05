@@ -27,27 +27,44 @@
   <button id="add-batch">Start auto add</button>
   <button id="stop-batch">Stop auto add</button>
   <hr/>
-  <div class="grid" id="gallery">
-    <img src="https://picsum.photos/id/1015/400/400" alt="Image 1" />
-    <img src="https://picsum.photos/id/1025/400/400" alt="Image 2" />
-    <img src="https://picsum.photos/id/1035/400/400" alt="Image 3" />
-    <img src="https://picsum.photos/id/1045/400/400" alt="Image 4" />
-    <img src="https://picsum.photos/id/1055/400/400" alt="Image 5" />
-    <img src="https://picsum.photos/id/1065/400/400" alt="Image 6" />
-  </div>
+  <div class="grid" id="gallery"></div>
   <script type="module">
     import { createImageViewer } from './dist/viewer.js';
-    createImageViewer({ scope: '#gallery' });
+
+    // Helper: create a data URL SVG with an emoji centered.
+    function svgDataUrl(emoji, size = 400){
+      const bg = randomPastel();
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}'>`+
+        `<rect width='100%' height='100%' rx='16' ry='16' fill='${bg}'/>`+
+        `<text x='50%' y='50%' font-size='${Math.round(size*0.45)}' text-anchor='middle' dominant-baseline='central'>${emoji}</text>`+
+        `</svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    function randomPastel(){
+      const h = Math.floor(Math.random()*360);
+      return `hsl(${h} 70% 80%)`;
+    }
+
+    const emojis = ['🌄','🖼️','🌈','🎨','🧊','🔥','⭐','🌙','🍀','🌸','⚡','💎','🚀','🐳','🪐','🎧','🧩','💡'];
+    let emojiIndex = 0;
 
     const gallery = document.getElementById('gallery');
-    let seed = 2000;
+
     function addImage(){
-  const id = (seed++ % 1000) + 1; // demo: cycling picsum id range
+      const emoji = emojis[emojiIndex++ % emojis.length];
       const img = document.createElement('img');
-      img.src = `https://picsum.photos/id/${id}/400/400`;
-      img.alt = 'Dynamic ' + id;
+      img.src = svgDataUrl(emoji);
+      img.alt = 'Emoji ' + emoji;
       gallery.appendChild(img);
     }
+
+    // Seed initial images
+    for (let i=0;i<6;i++) addImage();
+
+    // Initialize viewer (supports dynamic additions if MutationObserver inside lib; if not, reinvoke as needed)
+    createImageViewer({ scope: '#gallery' });
+
     document.getElementById('add-one').addEventListener('click', addImage);
     let timer = null;
     document.getElementById('add-batch').addEventListener('click', ()=>{

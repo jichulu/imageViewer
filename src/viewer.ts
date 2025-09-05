@@ -148,7 +148,6 @@ export class ImageViewer {
         imgEl.addEventListener('click', () => { if (!this.clickMoved) this.close(); });
 
         const zoomIndicator = document.createElement('div'); zoomIndicator.className = 'iv-zoom-indicator'; stage.appendChild(zoomIndicator);
-        const closeBtn = document.createElement('button'); closeBtn.className = 'iv-close'; closeBtn.innerHTML = '&#10005;'; closeBtn.addEventListener('click', () => this.close()); shell.appendChild(closeBtn);
         const counter = document.createElement('div'); counter.className = 'iv-counter'; stage.appendChild(counter);
 
     // Side navigation buttons
@@ -378,6 +377,8 @@ export class ImageViewer {
             this.options.onClose?.();
         };
         bd.addEventListener('transitionend', done);
+        // Reset transform
+        this.resetTransform(true);
     }
 
     destroy() {

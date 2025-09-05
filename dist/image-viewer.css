@@ -1,13 +1,19 @@
-@charset "UTF-8";
 :root {
-  /* CSS 变量：对外仍使用变量方便主题覆盖 */
-  --iv-backdrop: rgba(0,0,0,.85);
+  --iv-backdrop: rgba(0, 0, 0, .85);
   --iv-gap: 16px;
   --iv-radius: 4px;
   --iv-color: #fff;
   --iv-accent: #3b82f6;
   --iv-accent-hover: #2563eb;
   --iv-z: 9999;
+  /* Added extracted color variables */
+  --iv-btn-bg: #1e293b;
+  --iv-btn-border: #334155;
+  --iv-stage-bg: #1111114d;
+  --iv-overlay: #0009;
+  --iv-overlay-hover: #111c;
+  --iv-thumbs-bg: #0f172a4d;
+  --iv-error: #f87171;
   font-family: system-ui, sans-serif;
 }
 
@@ -25,7 +31,7 @@
   z-index: var(--iv-z);
   padding: clamp(8px, 2vw, 40px);
   opacity: 0;
-  transition: opacity 0.25s ease;
+  transition: opacity cubic-bezier(0.075, 0.82, 0.165, 1) ease;
 }
 .iv-backdrop.iv-active {
   opacity: 1;
@@ -54,10 +60,11 @@
   color: var(--iv-color);
   transform: scale(0.94) translateY(10px);
   opacity: 0;
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s;
 }
 
 .iv-stage {
+  padding: 3rem;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -65,7 +72,7 @@
   justify-content: center;
   overflow: hidden;
   position: relative;
-  background: #111;
+  background: var(--iv-stage-bg);
   border-radius: var(--iv-radius);
 }
 .iv-stage img {
@@ -74,15 +81,14 @@
   object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
-  transition: transform 0.25s ease;
 }
 
 .iv-nav-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid #334155;
+  background: var(--iv-overlay);
+  border: 1px solid var(--iv-btn-border);
   color: #fff;
   width: 46px;
   height: 70px;
@@ -97,7 +103,7 @@
   line-height: 1;
 }
 .iv-nav-btn:hover {
-  background: rgba(17, 17, 17, 0.8);
+  background: var(--iv-overlay-hover);
 }
 .iv-nav-btn-left {
   left: 8px;
@@ -109,13 +115,13 @@
 .iv-controls {
   position: absolute;
   top: 8px;
-  right: 52px;
+  right: 8px;
   display: flex;
   gap: 6px;
 }
 .iv-controls button {
-  background: #1e293b;
-  border: 1px solid #334155;
+  background: var(--iv-btn-bg);
+  border: 1px solid var(--iv-btn-border);
   color: #fff;
   width: 34px;
   height: 34px;
@@ -128,7 +134,7 @@
   padding: 0;
 }
 .iv-controls button:hover {
-  background: #334155;
+  background: var(--iv-btn-border);
 }
 
 .iv-counter {
@@ -137,7 +143,7 @@
   left: 10px;
   font-size: 12px;
   opacity: 0.85;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--iv-overlay);
   padding: 4px 8px;
   border-radius: var(--iv-radius);
 }
@@ -147,7 +153,7 @@
   gap: 6px;
   overflow-x: auto;
   padding: 4px;
-  background: #0f172a;
+  background: var(--iv-thumbs-bg);
   border-radius: var(--iv-radius);
 }
 .iv-thumbs img {
@@ -158,29 +164,10 @@
   border-radius: 3px;
   cursor: pointer;
   opacity: 0.6;
-  transition: 0.2s;
 }
 .iv-thumbs img[data-active=true] {
   border-color: var(--iv-accent);
   opacity: 1;
-}
-
-.iv-close {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid #334155;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 18px;
-  padding: 0;
-}
-.iv-close:hover {
-  background: #111;
 }
 
 .iv-zoom-indicator {
@@ -188,13 +175,13 @@
   bottom: 8px;
   right: 10px;
   font-size: 12px;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--iv-overlay);
   padding: 4px 8px;
   border-radius: var(--iv-radius);
 }
 
 .iv-error {
-  color: #f87171;
+  color: var(--iv-error);
   font-size: 14px;
   text-align: center;
   padding: 12px;

@@ -157,10 +157,7 @@ export class ImageViewer {
             this.thumbsEl = thumbs;
         }
         backdrop.appendChild(shell);
-        const container = document.createElement('div');
-        container.className = 'iv-container';
-        container.appendChild(backdrop);
-        document.body.appendChild(container);
+        document.body.appendChild(backdrop);
         requestAnimationFrame(() => backdrop.classList.add('iv-active'));
         this.backdrop = backdrop;
         this.imgEl = imgEl;

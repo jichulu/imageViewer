@@ -142,26 +142,26 @@ export class ImageViewer {
         const stage = document.createElement('div'); stage.className = 'iv-stage';
         const imgEl = document.createElement('img'); imgEl.draggable = false; stage.appendChild(imgEl);
 
-    // Click blank stage area to close
+        // Click blank stage area to close
         stage.addEventListener('click', e => { if (e.target === stage) this.close(); });
-    // Single click on image closes if not dragged
+        // Single click on image closes if not dragged
         imgEl.addEventListener('click', () => { if (!this.clickMoved) this.close(); });
 
         const zoomIndicator = document.createElement('div'); zoomIndicator.className = 'iv-zoom-indicator'; stage.appendChild(zoomIndicator);
         const counter = document.createElement('div'); counter.className = 'iv-counter'; stage.appendChild(counter);
 
-    // Side navigation buttons
+        // Side navigation buttons
         stage.appendChild(this.sideBtn('‹', () => this.prev(), 'left'));
         stage.appendChild(this.sideBtn('›', () => this.next(), 'right'));
 
-    // Control buttons (zoom / rotate / reset)
+        // Control buttons (zoom / rotate / reset)
         const controls = document.createElement('div'); controls.className = 'iv-controls';
         controls.append(
-            this.ctrlBtn('+', 'Zoom In', () => this.adjustZoom(1.25)),
-            this.ctrlBtn('-', 'Zoom Out', () => this.adjustZoom(0.8)),
-            this.ctrlBtn('⟲', 'Rotate Left', () => this.rotate(-90)),
-            this.ctrlBtn('⟳', 'Rotate Right', () => this.rotate(90)),
-            this.ctrlBtn('⤾', 'Reset', () => this.resetTransform(true)),
+            this.ctrlBtn('zoom-in', 'Zoom In', () => this.adjustZoom(1.25)),
+            this.ctrlBtn('zoom-out', 'Zoom Out', () => this.adjustZoom(0.8)),
+            this.ctrlBtn('rotate-left', 'Rotate Left', () => this.rotate(-90)),
+            this.ctrlBtn('rotate-right', 'Rotate Right', () => this.rotate(90)),
+            this.ctrlBtn('reset', 'Reset', () => this.resetTransform(true)),
         );
         stage.appendChild(controls);
 
@@ -176,7 +176,12 @@ export class ImageViewer {
             shell.appendChild(thumbs); this.thumbsEl = thumbs;
         }
 
-        backdrop.appendChild(shell); document.body.appendChild(backdrop);
+        backdrop.appendChild(shell);
+
+        const container = document.createElement('div');
+        container.className = 'iv-container';
+        container.appendChild(backdrop);
+        document.body.appendChild(container);
         requestAnimationFrame(() => backdrop.classList.add('iv-active'));
         this.backdrop = backdrop; this.imgEl = imgEl;
 
@@ -191,18 +196,76 @@ export class ImageViewer {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = `iv-nav-btn iv-nav-btn-${side}`;
-        b.textContent = label;
+        b.setAttribute('aria-label', side === 'left' ? 'Previous image' : 'Next image');
+        b.appendChild(this.icon(side === 'left' ? 'arrow-left' : 'arrow-right'));
         b.addEventListener('click', e => { e.stopPropagation(); fn(); });
         return b;
     }
 
-    private ctrlBtn(label: string, title: string, fn: () => void) {
+    private ctrlBtn(iconName: string, title: string, fn: () => void) {
         const b = document.createElement('button');
         b.type = 'button';
-        b.textContent = label;
         b.title = title;
+        b.setAttribute('aria-label', title);
+        b.appendChild(this.icon(iconName));
         b.addEventListener('click', e => { e.stopPropagation(); fn(); });
         return b;
+    }
+
+    // Create an inline SVG icon (stroke based, 24x24 viewBox)
+    private icon(name: string) {
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.classList.add('iv-icon');
+        const path = (d: string, extra: Partial<Record<string, string>> = {}) => {
+            const p = document.createElementNS(svgNS, 'path');
+            p.setAttribute('d', d);
+            Object.entries(extra).forEach(([k, v]) => { if (typeof v === 'string') p.setAttribute(k, v); });
+            return p;
+        };
+        switch (name) {
+            case 'arrow-left':
+                svg.append(path('M15 4l-8 8 8 8', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+                break;
+            case 'arrow-right':
+                svg.append(path('M9 4l8 8-8 8', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+                break;
+            case 'zoom-in':
+                svg.append(path('M11 17a6 6 0 100-12 6 6 0 000 12z')); // circle
+                svg.append(path('M11 9v4M9 11h4', { 'stroke-linecap': 'round' }));
+                svg.append(path('M16.5 16.5L21 21', { 'stroke-linecap': 'round' }));
+                break;
+            case 'zoom-out':
+                svg.append(path('M11 17a6 6 0 100-12 6 6 0 000 12z'));
+                svg.append(path('M9 11h4', { 'stroke-linecap': 'round' }));
+                svg.append(path('M16.5 16.5L21 21', { 'stroke-linecap': 'round' }));
+                break;
+            case 'rotate-left':
+                svg.append(path('M8 4v4h4')); // corner arrow
+                svg.append(path('M8 8a6 6 0 016-6 6 6 0 010 12 3 3 0 00-3 3v3', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+                break;
+            case 'rotate-right':
+                svg.append(path('M16 4v4h-4'));
+                svg.append(path('M16 8a6 6 0 00-6-6 6 6 0 000 12 3 3 0 013 3v3', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+                break;
+            case 'reset':
+                svg.append(path('M12 3v3')); // crosshair
+                svg.append(path('M12 18v3'));
+                svg.append(path('M3 12h3'));
+                svg.append(path('M18 12h3'));
+                svg.append(path('M12 8a4 4 0 100 8 4 4 0 000-8z'));
+                break;
+            default:
+                svg.append(path('M4 4h16v16H4z')); // fallback square
+        }
+        svg.querySelectorAll('path').forEach(p => {
+            if (!p.getAttribute('fill')) p.setAttribute('fill', 'none');
+            p.setAttribute('stroke', 'currentColor');
+            p.setAttribute('stroke-width', '2');
+        });
+        return svg;
     }
 
     private render(counter?: HTMLElement, zoomIndicator?: HTMLElement) {
@@ -271,7 +334,7 @@ export class ImageViewer {
             this.panStart = { ...this.pan };
             this.pointerStart = { x: e.clientX, y: e.clientY };
             this.clickMoved = false;
-            stage.style.cursor = 'grabbing';
+            stage.classList.add('iv-grabbing');
         });
         window.addEventListener('mousemove', e => {
             if (!this.isPanning) return;
@@ -283,7 +346,7 @@ export class ImageViewer {
         });
         window.addEventListener('mouseup', () => {
             this.isPanning = false;
-            stage.style.cursor = 'default';
+            stage.classList.remove('iv-grabbing');
         });
 
         // Touch: single-finger pan, two-finger pinch zoom
@@ -292,6 +355,7 @@ export class ImageViewer {
                 this.isPanning = true;
                 this.panStart = { ...this.pan };
                 this.pointerStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                stage.classList.add('iv-grabbing');
             } else if (e.touches.length === 2) {
                 this.isPanning = false;
                 this.multiTouchDist = this.distance(e.touches[0], e.touches[1]);
@@ -311,7 +375,10 @@ export class ImageViewer {
                 this.multiTouchDist = dist;
             }
         }, { passive: true });
-        stage.addEventListener('touchend', () => { this.isPanning = false; }, { passive: true });
+        stage.addEventListener('touchend', () => {
+            this.isPanning = false;
+            stage.classList.remove('iv-grabbing');
+        }, { passive: true });
     }
 
     private distance(a: Touch, b: Touch) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
@@ -361,10 +428,10 @@ export class ImageViewer {
 
     close() {
         if (!this.backdrop) return;
-    // Remove keyboard event handler if it exists
+        // Remove keyboard event handler if it exists
         const handle = ((this as any)._kbd as ((e: KeyboardEvent) => void) | undefined);
         if (handle) window.removeEventListener('keydown', handle);
-    // Play closing animation
+        // Play closing animation
         const bd = this.backdrop;
         bd.classList.remove('iv-active');
         bd.classList.add('iv-leave');

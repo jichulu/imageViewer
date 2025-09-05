@@ -1,4 +1,4 @@
-:root {
+.iv-container {
   --iv-backdrop: rgba(0, 0, 0, .85);
   --iv-gap: 16px;
   --iv-radius: 4px;
@@ -13,12 +13,6 @@
   --iv-overlay: #0009;
   --iv-overlay-hover: #111c;
   --iv-thumbs-bg: #0f172a4d;
-  --iv-error: #f87171;
-  font-family: system-ui, sans-serif;
-}
-
-.iv-hidden {
-  display: none !important;
 }
 
 .iv-backdrop {
@@ -49,6 +43,7 @@
 }
 
 .iv-shell {
+  font-family: system-ui, sans-serif;
   position: relative;
   max-width: min(92vw, 1400px);
   max-height: 92vh;
@@ -64,6 +59,7 @@
 }
 
 .iv-stage {
+  cursor: default;
   padding: 3rem;
   flex: 1;
   min-height: 0;
@@ -81,6 +77,13 @@
   object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
+  transition: 0.3s ease;
+}
+.iv-stage.iv-grabbing {
+  cursor: grabbing;
+}
+.iv-stage.iv-grabbing img {
+  transition: none;
 }
 
 .iv-nav-btn {
@@ -92,7 +95,6 @@
   color: #fff;
   width: 46px;
   height: 70px;
-  font-size: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,13 +182,19 @@
   border-radius: var(--iv-radius);
 }
 
-.iv-error {
-  color: var(--iv-error);
-  font-size: 14px;
-  text-align: center;
-  padding: 12px;
-}
-
 body.iv-lock {
   overflow: hidden;
+}
+
+/* Generic icon styling */
+.iv-icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+  pointer-events: none;
+}
+
+.iv-controls button .iv-icon {
+  width: 20px;
+  height: 20px;
 }

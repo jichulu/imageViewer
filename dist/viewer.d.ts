@@ -46,6 +46,7 @@ export declare class ImageViewer {
     open(startIndex?: number): void;
     private sideBtn;
     private ctrlBtn;
+    private icon;
     private render;
     private highlightThumb;
     private updateZoomIndicator;

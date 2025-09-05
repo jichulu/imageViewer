@@ -8,8 +8,6 @@ A lightweight, zero‑dependency TypeScript image viewer: modal overlay, zoom, d
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="license" /></a>
 </p>
 
-> Published on npm as `lite-image-viewer` (the simple name `image-viewer` was already taken).
-
 ## Features
 - Auto-detect images within a given DOM scope and open on click
 - Zoom via buttons / mouse wheel / pinch (no need to hold Ctrl/⌘)
@@ -90,12 +88,6 @@ interface ViewerOptions {
   filter?: (img: HTMLImageElement) => boolean;              // Filter which <img> elements are included
 }
 ```
-
-### Planned Public Methods
-(Currently only the factory and class are exported; internal methods may change. Open an issue if you need more public APIs.)
-
-## Changelog
-Initial release: 0.1.1
 
 ## License
 MIT

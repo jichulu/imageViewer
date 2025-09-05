@@ -141,18 +141,19 @@ export class ImageViewer {
         const shell = document.createElement('div'); shell.className = 'iv-shell';
         const stage = document.createElement('div'); stage.className = 'iv-stage';
         const imgEl = document.createElement('img'); imgEl.draggable = false; stage.appendChild(imgEl);
+        const tools = document.createElement('div'); tools.className = 'iv-tools'; stage.appendChild(tools);
 
         // Click blank stage area to close
         stage.addEventListener('click', e => { if (e.target === stage) this.close(); });
         // Single click on image closes if not dragged
         imgEl.addEventListener('click', () => { if (!this.clickMoved) this.close(); });
 
-        const zoomIndicator = document.createElement('div'); zoomIndicator.className = 'iv-zoom-indicator'; stage.appendChild(zoomIndicator);
-        const counter = document.createElement('div'); counter.className = 'iv-counter'; stage.appendChild(counter);
+        const zoomIndicator = document.createElement('div'); zoomIndicator.className = 'iv-zoom-indicator'; tools.appendChild(zoomIndicator);
+        const counter = document.createElement('div'); counter.className = 'iv-counter'; tools.appendChild(counter);
 
         // Side navigation buttons
-        stage.appendChild(this.sideBtn('‹', () => this.prev(), 'left'));
-        stage.appendChild(this.sideBtn('›', () => this.next(), 'right'));
+        tools.appendChild(this.sideBtn('‹', () => this.prev(), 'left'));
+        tools.appendChild(this.sideBtn('›', () => this.next(), 'right'));
 
         // Control buttons (zoom / rotate / reset)
         const controls = document.createElement('div'); controls.className = 'iv-controls';
@@ -163,7 +164,7 @@ export class ImageViewer {
             this.ctrlBtn('rotate-right', 'Rotate Right', () => this.rotate(90)),
             this.ctrlBtn('reset', 'Reset', () => this.resetTransform(true)),
         );
-        stage.appendChild(controls);
+        tools.appendChild(controls);
 
         shell.appendChild(stage);
         if (this.options.thumbnails) {
@@ -272,8 +273,6 @@ export class ImageViewer {
         if (!this.imgEl) return;
         const item = this.images[this.index];
         this.imgEl.src = item.src;
-        this.imgEl.alt = item.alt || '';
-        this.imgEl.title = item.title || item.alt || '';
         if (counter) counter.textContent = `${this.index + 1} / ${this.images.length}`;
         this.highlightThumb();
         this.resetTransform();

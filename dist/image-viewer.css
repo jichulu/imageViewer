@@ -4,14 +4,12 @@
   --iv-radius: 4px;
   --iv-color: #fff;
   --iv-accent: #3b82f6;
-  --iv-accent-hover: #2563eb;
   --iv-z: 9999;
   /* Added extracted color variables */
   --iv-btn-bg: #1e293b;
-  --iv-btn-border: #334155;
+  --iv-btn-hover: #334155;
   --iv-stage-bg: #1111114d;
   --iv-overlay: #0009;
-  --iv-overlay-hover: #111c;
   --iv-thumbs-bg: #0f172a4d;
 }
 
@@ -71,6 +69,13 @@
   background: var(--iv-stage-bg);
   border-radius: var(--iv-radius);
 }
+.iv-stage .iv-tools {
+  opacity: 0.1;
+  transition: 1s ease-out;
+}
+.iv-stage:hover .iv-tools {
+  opacity: 1;
+}
 .iv-stage img {
   max-width: 100%;
   max-height: 100%;
@@ -90,8 +95,8 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--iv-overlay);
-  border: 1px solid var(--iv-btn-border);
+  background: var(--iv-btn-bg);
+  border: none;
   color: #fff;
   width: 46px;
   height: 70px;
@@ -105,7 +110,7 @@
   line-height: 1;
 }
 .iv-nav-btn:hover {
-  background: var(--iv-overlay-hover);
+  background: var(--iv-btn-hover);
 }
 .iv-nav-btn-left {
   left: 8px;
@@ -123,7 +128,7 @@
 }
 .iv-controls button {
   background: var(--iv-btn-bg);
-  border: 1px solid var(--iv-btn-border);
+  border: none;
   color: #fff;
   width: 34px;
   height: 34px;
@@ -136,12 +141,12 @@
   padding: 0;
 }
 .iv-controls button:hover {
-  background: var(--iv-btn-border);
+  background: var(--iv-btn-hover);
 }
 
 .iv-counter {
   position: absolute;
-  top: 8px;
+  bottom: 8px;
   left: 10px;
   font-size: 12px;
   opacity: 0.85;

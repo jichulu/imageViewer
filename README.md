@@ -1,4 +1,4 @@
-# TS ImageViewer
+# Lite Image Viewer
 
 A lightweight, zero‑dependency TypeScript image viewer: modal overlay, zoom, drag/pan, thumbnails, rotation, keyboard navigation.
 

@@ -118,6 +118,9 @@ export class ImageViewer {
         const imgEl = document.createElement('img');
         imgEl.draggable = false;
         stage.appendChild(imgEl);
+        const tools = document.createElement('div');
+        tools.className = 'iv-tools';
+        stage.appendChild(tools);
         // Click blank stage area to close
         stage.addEventListener('click', e => { if (e.target === stage)
             this.close(); });
@@ -126,18 +129,18 @@ export class ImageViewer {
             this.close(); });
         const zoomIndicator = document.createElement('div');
         zoomIndicator.className = 'iv-zoom-indicator';
-        stage.appendChild(zoomIndicator);
+        tools.appendChild(zoomIndicator);
         const counter = document.createElement('div');
         counter.className = 'iv-counter';
-        stage.appendChild(counter);
+        tools.appendChild(counter);
         // Side navigation buttons
-        stage.appendChild(this.sideBtn('‹', () => this.prev(), 'left'));
-        stage.appendChild(this.sideBtn('›', () => this.next(), 'right'));
+        tools.appendChild(this.sideBtn('‹', () => this.prev(), 'left'));
+        tools.appendChild(this.sideBtn('›', () => this.next(), 'right'));
         // Control buttons (zoom / rotate / reset)
         const controls = document.createElement('div');
         controls.className = 'iv-controls';
         controls.append(this.ctrlBtn('zoom-in', 'Zoom In', () => this.adjustZoom(1.25)), this.ctrlBtn('zoom-out', 'Zoom Out', () => this.adjustZoom(0.8)), this.ctrlBtn('rotate-left', 'Rotate Left', () => this.rotate(-90)), this.ctrlBtn('rotate-right', 'Rotate Right', () => this.rotate(90)), this.ctrlBtn('reset', 'Reset', () => this.resetTransform(true)));
-        stage.appendChild(controls);
+        tools.appendChild(controls);
         shell.appendChild(stage);
         if (this.options.thumbnails) {
             const thumbs = document.createElement('div');
@@ -249,8 +252,6 @@ export class ImageViewer {
             return;
         const item = this.images[this.index];
         this.imgEl.src = item.src;
-        this.imgEl.alt = item.alt || '';
-        this.imgEl.title = item.title || item.alt || '';
         if (counter)
             counter.textContent = `${this.index + 1} / ${this.images.length}`;
         this.highlightThumb();

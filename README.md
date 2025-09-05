@@ -1,50 +1,101 @@
 # TS ImageViewer
 
-一个零依赖的轻量 TypeScript 图片查看器：弹窗显示正文图片，支持缩放、拖拽、缩略图、旋转、键盘导航。
+A lightweight, zero‑dependency TypeScript image viewer: modal overlay, zoom, drag/pan, thumbnails, rotation, keyboard navigation.
 
-## 功能特性
-- 点击正文图片自动弹出查看器
-- 缩略图快速跳转
-- 键盘支持：← → 切换，ESC 关闭，+ / - 缩放，0 重置
-- 缩放方式：按钮、滚轮（无需再按 Ctrl/⌘）、双指捏合（移动端）
-- 平移：鼠标拖拽 / 单指拖动
-- 最大 8 倍 / 最小 0.25 倍缩放
-- 旋转：右上角按钮支持 90° 左右旋转，重置恢复
-- 页码显示：当前页 / 总数（左上角）
-- 可传入自定义图片数组或自动扫描 DOM
+<p>
+  <a href="https://www.npmjs.com/package/lite-image-viewer"><img src="https://img.shields.io/npm/v/lite-image-viewer.svg?style=flat&color=33a" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/lite-image-viewer"><img src="https://img.shields.io/npm/dm/lite-image-viewer.svg?color=4a7" alt="downloads" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="license" /></a>
+</p>
 
-## 快速使用
+> Published on npm as `lite-image-viewer` (the simple name `image-viewer` was already taken).
+
+## Features
+- Auto-detect images within a given DOM scope and open on click
+- Zoom via buttons / mouse wheel / pinch (no need to hold Ctrl/⌘)
+- Pan by mouse drag or single-finger touch drag
+- Rotate left / right in 90° steps, plus reset
+- Thumbnail strip with auto-centering and quick navigation
+- Keyboard shortcuts: ← / → navigate, ESC close, + / − zoom, 0 reset
+- Zoom range 0.25x – 8x with smooth interpolation
+- Live detection of newly added images (MutationObserver)
+- Optional explicit images array (skip DOM scan)
+- Tiny, framework-agnostic, full TypeScript types
+
+## Live Demo
+https://jichulu.github.io/imageViewer/
+
+## Install
+```bash
+npm i lite-image-viewer
+# or
+pnpm add lite-image-viewer
+# or
+yarn add lite-image-viewer
+```
+
+## Basic Usage (bundler / ESM)
+```ts
+import { createImageViewer } from 'lite-image-viewer';
+import 'lite-image-viewer/image-viewer.css';
+
+createImageViewer({ scope: 'article' });
+```
+
+Providing your own image list:
+```ts
+createImageViewer({
+  images: [
+    { src: '/a.jpg', alt: 'A' },
+    { src: '/b.jpg', title: 'Image B' }
+  ],
+  thumbnails: true
+});
+```
+
+## Direct Browser (CDN / ESM) Example
 ```html
-<link rel="stylesheet" href="dist/image-viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/image-viewer.css" />
+<article>
+  <img src="/demo/1.jpg" />
+  <img src="/demo/2.jpg" />
+</article>
 <script type="module">
-  import { createImageViewer } from './dist/viewer.js';
+  import { createImageViewer } from 'https://unpkg.com/lite-image-viewer/dist/viewer.js';
   createImageViewer({ scope: 'article' });
 </script>
 ```
 
-## 构建
+## Local Dev (clone repo)
 ```powershell
 npm install
 npm run build
 ```
-输出文件位于 `dist/`。
+Build output is in `dist/`.
 
 ## API
 ```ts
 createImageViewer(options?: ViewerOptions): ImageViewer
 
 interface ViewerOptions {
-  scope?: string | HTMLElement; // 扫描范围
-  thumbnails?: boolean;         // 缩略图
-  closeOnBackdrop?: boolean;    // 点击遮罩关闭
-  keyboard?: boolean;           // 键盘导航
-  wheelZoom?: boolean;          // 是否启用滚轮缩放（直接滚轮即可）
-  className?: string;           // 自定义类
+  scope?: string | HTMLElement; // DOM scan scope
+  thumbnails?: boolean;         // Show thumbnail strip
+  closeOnBackdrop?: boolean;    // Click backdrop to close
+  keyboard?: boolean;           // Enable keyboard navigation
+  wheelZoom?: boolean;          // Enable direct wheel zoom
+  className?: string;           // Extra class on root
   onOpen?: () => void;
   onClose?: () => void;
-  images?: { src: string; alt?: string; title?: string }[]; // 直接提供图片
+  images?: { src: string; alt?: string; title?: string }[]; // Provide images directly
+  filter?: (img: HTMLImageElement) => boolean;              // Filter which <img> elements are included
 }
 ```
+
+### Planned Public Methods
+(Currently only the factory and class are exported; internal methods may change. Open an issue if you need more public APIs.)
+
+## Changelog
+Initial release: 0.1.1
 
 ## License
 MIT

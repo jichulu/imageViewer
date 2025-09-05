@@ -1,6 +1,40 @@
 {
-  "name": "image-viewer",
-  "version": "0.1.0",
+  "name": "lite-image-viewer",
+  "version": "0.1.1",
+  "author": "jichulu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jichulu/imageViewer.git"
+  },
+  "homepage": "https://jichulu.github.io/imageViewer/",
+  "bugs": {
+    "url": "https://github.com/jichulu/imageViewer/issues"
+  },
+  "description": "Lightweight zero-dependency TypeScript image viewer with zoom, drag, rotate, thumbnails, keyboard navigation.",
+  "license": "MIT",
+  "keywords": [
+    "image",
+    "viewer",
+    "lightbox",
+    "zoom",
+    "gallery",
+    "typescript",
+    "thumbnails"
+  ],
+  "files": [
+    "dist"
+  ],
+  "module": "dist/viewer.js",
+  "types": "dist/viewer.d.ts",
+  "style": "dist/image-viewer.css",
+  "exports": {
+    ".": {
+      "import": "./dist/viewer.js",
+      "types": "./dist/viewer.d.ts"
+    },
+    "./image-viewer.css": "./dist/image-viewer.css"
+  },
+  "sideEffects": false,
   "type": "module",
   "scripts": {
     "build": "tsc --project tsconfig.json && npm run build:css",

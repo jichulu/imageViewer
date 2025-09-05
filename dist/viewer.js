@@ -1,4 +1,4 @@
-// ImageViewer: 弹窗图片查看器 (缩略图 / 缩放 / 拖拽 / 键盘导航)
+// ImageViewer: modal image viewer (thumbnails / zoom / pan / keyboard navigation)
 const DEFAULTS = {
     scope: null,
     thumbnails: true,
@@ -17,20 +17,20 @@ export class ImageViewer {
         this.images = [];
         this.index = 0;
         this.zoom = 1;
-        this.rotation = 0; // 旋转角度 (度)
+        this.rotation = 0; // rotation angle (deg)
         this.pan = { x: 0, y: 0 };
         this.isPanning = false;
         this.panStart = { x: 0, y: 0 };
         this.pointerStart = { x: 0, y: 0 };
         this.multiTouchDist = 0;
-        this.origin = { x: 0, y: 0 }; // pinch 中心点
-        this.clickMoved = false; // 用于判断是否拖拽过，防止拖拽后触发点击关闭
+        this.origin = { x: 0, y: 0 }; // pinch origin
+        this.clickMoved = false; // track if dragged to suppress click-close
         const scope = typeof opts.scope === 'string' ? document.querySelector(opts.scope) : (_a = opts.scope) !== null && _a !== void 0 ? _a : null;
         this.options = { ...DEFAULTS, ...opts, scope };
         this.collect();
         this.observeNewImages();
     }
-    // 收集图片
+    // Collect images from DOM
     collect() {
         if (this.options.images) {
             this.images = [...this.options.images];
@@ -43,10 +43,10 @@ export class ImageViewer {
             this.tryAddImage(img);
         });
     }
-    // 监听后续新增图片
+    // Observe newly added images
     observeNewImages() {
         if (this.options.images)
-            return; // 提供 images 时不监听 DOM
+            return; // skip if images provided directly
         const root = this.options.scope || document.body;
         const mo = new MutationObserver(muts => {
             for (const m of muts) {
@@ -118,10 +118,10 @@ export class ImageViewer {
         const imgEl = document.createElement('img');
         imgEl.draggable = false;
         stage.appendChild(imgEl);
-        // 空白点击关闭
+        // Click blank stage area to close
         stage.addEventListener('click', e => { if (e.target === stage)
             this.close(); });
-        // 图片单击关闭（非拖拽）
+        // Single click on image closes if not dragged
         imgEl.addEventListener('click', () => { if (!this.clickMoved)
             this.close(); });
         const zoomIndicator = document.createElement('div');
@@ -135,10 +135,10 @@ export class ImageViewer {
         const counter = document.createElement('div');
         counter.className = 'iv-counter';
         stage.appendChild(counter);
-        // 侧边导航
+        // Side navigation buttons
         stage.appendChild(this.sideBtn('‹', () => this.prev(), 'left'));
         stage.appendChild(this.sideBtn('›', () => this.next(), 'right'));
-        // 控制按钮
+        // Control buttons (zoom / rotate / reset)
         const controls = document.createElement('div');
         controls.className = 'iv-controls';
         controls.append(this.ctrlBtn('+', 'Zoom In', () => this.adjustZoom(1.25)), this.ctrlBtn('-', 'Zoom Out', () => this.adjustZoom(0.8)), this.ctrlBtn('⟲', 'Rotate Left', () => this.rotate(-90)), this.ctrlBtn('⟳', 'Rotate Right', () => this.rotate(90)), this.ctrlBtn('⤾', 'Reset', () => this.resetTransform(true)));
@@ -248,11 +248,11 @@ export class ImageViewer {
     }
     installWheel(stage) {
         stage.addEventListener('wheel', e => {
-            // 直接使用滚轮缩放，不再要求 Ctrl/⌘
+            // Direct wheel zoom (no Ctrl/⌘ required)
             e.preventDefault();
-            // 根据滚轮速度调节缩放比例，限制单次极端变化
+            // Derive scale factor from wheel delta, clamp extremes
             const step = Math.max(-1, Math.min(1, e.deltaY / 100));
-            const factor = step < 0 ? 1 - step * 0.25 : 1 / (1 + step * 0.25); // 平滑缩放
+            const factor = step < 0 ? 1 - step * 0.25 : 1 / (1 + step * 0.25); // smooth scaling
             const rect = this.imgEl.getBoundingClientRect();
             const cx = e.clientX - rect.left - rect.width / 2;
             const cy = e.clientY - rect.top - rect.height / 2;
@@ -260,7 +260,7 @@ export class ImageViewer {
         }, { passive: false });
     }
     installInteractions(stage) {
-        // 鼠标拖拽平移
+        // Mouse drag for panning
         stage.addEventListener('mousedown', e => {
             if (e.button !== 0)
                 return;
@@ -284,7 +284,7 @@ export class ImageViewer {
             this.isPanning = false;
             stage.style.cursor = 'default';
         });
-        // 触摸：单指拖动，双指缩放
+        // Touch: single-finger pan, two-finger pinch zoom
         stage.addEventListener('touchstart', e => {
             if (e.touches.length === 1) {
                 this.isPanning = true;
@@ -360,11 +360,11 @@ export class ImageViewer {
     close() {
         if (!this.backdrop)
             return;
-        // 取出键盘事件处理器（可能不存在）
+        // Remove keyboard event handler if it exists
         const handle = this._kbd;
         if (handle)
             window.removeEventListener('keydown', handle);
-        // 离场动画
+        // Play closing animation
         const bd = this.backdrop;
         bd.classList.remove('iv-active');
         bd.classList.add('iv-leave');
@@ -385,6 +385,6 @@ export class ImageViewer {
         this.close();
     }
 }
-// 工厂函数
+// Factory function
 export function createImageViewer(options) { return new ImageViewer(options); }
 //# sourceMappingURL=viewer.js.map

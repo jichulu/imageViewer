@@ -4,23 +4,23 @@ export interface ImageItem {
     title?: string;
 }
 export interface ViewerOptions {
-    /** CSS 选择器或元素，用于限定要扫描的正文范围 */
+    /** CSS selector or element that bounds the DOM scan */
     scope?: string | HTMLElement;
-    /** 是否显示缩略图条 */
+    /** Show thumbnail strip */
     thumbnails?: boolean;
-    /** 点击遮罩是否关闭 */
+    /** Close when clicking backdrop */
     closeOnBackdrop?: boolean;
-    /** 是否启用键盘导航 */
+    /** Enable keyboard navigation */
     keyboard?: boolean;
-    /** 是否启用滚轮缩放 (现在无需按 Ctrl/⌘) */
+    /** Enable wheel zoom (no Ctrl/⌘ needed) */
     wheelZoom?: boolean;
-    /** 自定义根元素附加的类名 */
+    /** Extra class names for root element */
     className?: string;
     onOpen?: () => void;
     onClose?: () => void;
-    /** 直接传入图片数组，若提供则不再扫描 DOM */
+    /** Provide images directly; skip DOM scan if set */
     images?: ImageItem[];
-    /** 过滤方法：判断 img 元素是否合法，返回 true 表示可作为预览图片 */
+    /** Filter function: return true to include an <img> */
     filter?: (img: HTMLImageElement) => boolean;
 }
 export declare class ImageViewer {

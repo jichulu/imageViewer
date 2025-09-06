@@ -50,17 +50,21 @@ export class ImageViewer {
         if (this.options.images)
             return; // skip if images provided directly
         const root = this.options.scope || document.body;
+        const processMutation = (nodes, fn) => {
+            nodes.forEach(node => {
+                var _a;
+                if (node.nodeType !== 1)
+                    return;
+                const el = node;
+                if (el.tagName === 'IMG')
+                    fn(el);
+                (_a = el.querySelectorAll) === null || _a === void 0 ? void 0 : _a.call(el, 'img').forEach(img => fn(img));
+            });
+        };
         const mo = new MutationObserver(muts => {
             for (const m of muts) {
-                m.addedNodes.forEach(node => {
-                    var _a;
-                    if (node.nodeType !== 1)
-                        return;
-                    const el = node;
-                    if (el.tagName === 'IMG')
-                        this.tryAddImage(el);
-                    (_a = el.querySelectorAll) === null || _a === void 0 ? void 0 : _a.call(el, 'img').forEach(img => this.tryAddImage(img));
-                });
+                processMutation(m.addedNodes, node => this.tryAddImage(node));
+                processMutation(m.removedNodes, node => this.tryRemoveImage(node));
             }
         });
         mo.observe(root, { childList: true, subtree: true });
@@ -95,6 +99,26 @@ export class ImageViewer {
                     this.go(idx);
             });
             this.thumbsEl.appendChild(t);
+            const counter = this.backdrop.querySelector('.iv-counter');
+            if (counter)
+                counter.textContent = `${this.index + 1} / ${this.images.length}`;
+        }
+    }
+    tryRemoveImage(img) {
+        if (img.dataset.ivBound !== '1')
+            return;
+        const src = img.currentSrc || img.src;
+        const idx = this.images.findIndex(i => i.src === src);
+        if (idx >= 0)
+            this.images.splice(idx, 1);
+        delete img.dataset.ivBound;
+        img.style.cursor = '';
+        img.removeEventListener('click', () => { });
+        if (this.backdrop && this.thumbsEl) {
+            const thumbs = Array.from(this.thumbsEl.querySelectorAll('img'));
+            const t = thumbs.find(t => (t.currentSrc || t.src) === src);
+            if (t)
+                t.remove();
             const counter = this.backdrop.querySelector('.iv-counter');
             if (counter)
                 counter.textContent = `${this.index + 1} / ${this.images.length}`;

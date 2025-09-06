@@ -45,6 +45,7 @@ export declare class ImageViewer {
     private collect;
     private observeNewImages;
     private tryAddImage;
+    private tryRemoveImage;
     open(startIndex?: number): void;
     private sideBtn;
     private ctrlBtn;

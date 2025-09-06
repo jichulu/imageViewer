@@ -1,8 +1,9 @@
 import { defineConfig } from 'tsup';
+import { htmlMinify } from './tsup-html-plugin';
 
 export default defineConfig({
   entry: ['src/viewer.ts'],
-  format: ['esm'], // revert to pure ESM output
+  format: ['esm'],
   dts: true,
   sourcemap: true,
   clean: true,
@@ -10,12 +11,10 @@ export default defineConfig({
   outDir: 'dist',
   treeshake: true,
   minify: true,
-  banner: {
-    js: '// Built with tsup (ESM)'
-  },
   loader: {
     '.html': 'text',
     '.scss': 'file'
   },
-  skipNodeModulesBundle: true
+  skipNodeModulesBundle: true,
+  esbuildPlugins: [htmlMinify()]
 });

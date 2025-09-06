@@ -4,6 +4,7 @@
 name: Publish npm Package
 
 on:
+  workflow_dispatch: # 手动触发
   push:
     tags:
       - 'v*' # 例如 v1.0.0 时触发

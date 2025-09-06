@@ -13,6 +13,16 @@ const DEFAULTS = {
     minZoom: 0.25,
     maxZoom: 8
 };
+function createEl(tag, props) {
+    const el = document.createElement(tag);
+    if (props) {
+        const { style, ...rest } = props;
+        Object.assign(el, rest);
+        if (style)
+            el.style.cssText = style;
+    }
+    return el;
+}
 export class ImageViewer {
     constructor(opts = {}) {
         var _a;
@@ -27,6 +37,7 @@ export class ImageViewer {
         this.multiTouchDist = 0;
         this.origin = { x: 0, y: 0 }; // pinch origin
         this.clickMoved = false; // track if dragged to suppress click-close
+        this.disposes = []; // event unbinders
         const scope = typeof opts.scope === 'string' ? document.querySelector(opts.scope) : (_a = opts.scope) !== null && _a !== void 0 ? _a : null;
         this.options = { ...DEFAULTS, ...opts, scope };
         this.collect();
@@ -68,7 +79,7 @@ export class ImageViewer {
             }
         });
         mo.observe(root, { childList: true, subtree: true });
-        this._mo = mo;
+        this.disposes.push(() => mo.disconnect());
     }
     tryAddImage(img) {
         if (img.dataset.noViewer === 'true' || img.dataset.ivBound === '1')
@@ -89,19 +100,14 @@ export class ImageViewer {
                 this.open(idx);
         });
         if (this.backdrop && this.thumbsEl) {
-            const t = document.createElement('img');
-            t.src = item.src;
-            t.alt = item.alt || '';
-            t.loading = 'lazy';
+            const t = createEl('img', { src: item.src, alt: item.alt || '', loading: 'lazy' });
             t.addEventListener('click', () => {
                 const idx = this.images.findIndex(i => i.src === src);
                 if (idx >= 0)
                     this.go(idx);
             });
             this.thumbsEl.appendChild(t);
-            const counter = this.backdrop.querySelector('.iv-counter');
-            if (counter)
-                counter.textContent = `${this.index + 1} / ${this.images.length}`;
+            this.updateCounter();
         }
     }
     tryRemoveImage(img) {
@@ -119,99 +125,22 @@ export class ImageViewer {
             const t = thumbs.find(t => (t.currentSrc || t.src) === src);
             if (t)
                 t.remove();
-            const counter = this.backdrop.querySelector('.iv-counter');
-            if (counter)
-                counter.textContent = `${this.index + 1} / ${this.images.length}`;
+            this.updateCounter();
         }
     }
-    open(startIndex = 0) {
-        var _a, _b;
-        if (!this.images.length)
-            return;
-        this.index = Math.min(Math.max(0, startIndex), this.images.length - 1);
-        if (this.backdrop)
-            return;
-        document.body.classList.add('iv-lock');
-        const backdrop = document.createElement('div');
-        backdrop.className = `iv-backdrop ${this.options.className}`.trim();
-        if (this.options.closeOnBackdrop)
-            backdrop.addEventListener('mousedown', e => { if (e.target === backdrop)
-                this.close(); });
-        const shell = document.createElement('div');
-        shell.className = 'iv-shell';
-        const stage = document.createElement('div');
-        stage.className = 'iv-stage';
-        const viewBox = document.createElement('div');
-        viewBox.className = 'iv-viewbox';
-        stage.appendChild(viewBox);
-        const imgEl = document.createElement('img');
-        imgEl.draggable = false;
-        viewBox.appendChild(imgEl);
-        const tools = document.createElement('div');
-        tools.className = 'iv-tools';
-        stage.appendChild(tools);
-        // Click blank stage area to close
-        stage.addEventListener('click', e => { if (e.target === stage)
-            this.close(); });
-        // Single click on image closes if not dragged
-        imgEl.addEventListener('click', () => { if (!this.clickMoved)
-            this.close(); });
-        const zoomIndicator = document.createElement('div');
-        zoomIndicator.className = 'iv-zoom-indicator';
-        tools.appendChild(zoomIndicator);
-        const counter = document.createElement('div');
-        counter.className = 'iv-counter';
-        tools.appendChild(counter);
-        // Side navigation buttons
-        tools.appendChild(this.sideBtn('‹', () => this.prev(), 'left'));
-        tools.appendChild(this.sideBtn('›', () => this.next(), 'right'));
-        // Control buttons (zoom / rotate / reset)
-        const controls = document.createElement('div');
-        controls.className = 'iv-controls';
-        controls.append(this.ctrlBtn('zoom-in', 'Zoom In', () => this.adjustZoom(1.25)), this.ctrlBtn('zoom-out', 'Zoom Out', () => this.adjustZoom(0.8)), this.ctrlBtn('rotate-left', 'Rotate Left', () => this.rotate(-90)), this.ctrlBtn('rotate-right', 'Rotate Right', () => this.rotate(90)), this.ctrlBtn('reset', 'Reset', () => this.resetTransform(true)));
-        tools.appendChild(controls);
-        shell.appendChild(stage);
-        if (this.options.thumbnails) {
-            const thumbs = document.createElement('div');
-            thumbs.className = 'iv-thumbs';
-            this.images.forEach((it, i) => {
-                const t = document.createElement('img');
-                t.src = it.src;
-                t.alt = it.alt || '';
-                t.loading = 'lazy';
-                t.addEventListener('click', () => this.go(i));
-                thumbs.appendChild(t);
-            });
-            shell.appendChild(thumbs);
-            this.thumbsEl = thumbs;
-        }
-        backdrop.appendChild(shell);
-        document.body.appendChild(backdrop);
-        requestAnimationFrame(() => backdrop.classList.add('iv-active'));
-        this.backdrop = backdrop;
-        this.imgEl = imgEl;
-        this.installInteractions(stage);
-        if (this.options.keyboard)
-            this.installKeyboard();
-        if (this.options.wheelZoom)
-            this.installWheel(stage);
-        this.render(counter, zoomIndicator);
-        (_b = (_a = this.options).onOpen) === null || _b === void 0 ? void 0 : _b.call(_a);
-    }
-    sideBtn(label, fn, side) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = `iv-nav-btn iv-nav-btn-${side}`;
-        b.setAttribute('aria-label', side === 'left' ? 'Previous image' : 'Next image');
+    sideBtn(fn, side) {
+        const b = createEl('button', {
+            type: 'button',
+            className: `iv-nav-btn iv-nav-btn-${side}`,
+            title: side === 'left' ? 'Previous image' : 'Next image',
+            ariaLabel: side === 'left' ? 'Previous image' : 'Next image'
+        });
         b.appendChild(this.icon(side === 'left' ? 'arrow-left' : 'arrow-right'));
         b.addEventListener('click', e => { e.stopPropagation(); fn(); });
         return b;
     }
     ctrlBtn(iconName, title, fn) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.title = title;
-        b.setAttribute('aria-label', title);
+        const b = createEl('button', { type: 'button', title, ariaLabel: title, className: 'iv-ctrl-btn' });
         b.appendChild(this.icon(iconName));
         b.addEventListener('click', e => { e.stopPropagation(); fn(); });
         return b;
@@ -273,16 +202,15 @@ export class ImageViewer {
         });
         return svg;
     }
-    render(counter, zoomIndicator) {
+    render() {
         if (!this.imgEl)
             return;
         const item = this.images[this.index];
         this.imgEl.src = item.src;
-        if (counter)
-            counter.textContent = `${this.index + 1} / ${this.images.length}`;
         this.highlightThumb();
         this.resetTransform(true);
-        this.updateZoomIndicator(zoomIndicator);
+        this.updateZoomIndicator();
+        this.updateCounter();
     }
     highlightThumb() {
         if (!this.thumbsEl)
@@ -297,9 +225,17 @@ export class ImageViewer {
                 active.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
         }
     }
-    updateZoomIndicator(el) {
-        if (el)
-            el.textContent = `${Math.round(this.zoom * 100)}%`;
+    updateCounter() {
+        var _a;
+        const counter = (_a = this.backdrop) === null || _a === void 0 ? void 0 : _a.querySelector('.iv-counter');
+        if (counter)
+            counter.textContent = `${this.index + 1} / ${this.images.length}`;
+    }
+    updateZoomIndicator() {
+        var _a;
+        const zoomIndicator = (_a = this.backdrop) === null || _a === void 0 ? void 0 : _a.querySelector('.iv-zoom-indicator');
+        if (zoomIndicator)
+            zoomIndicator.textContent = `${Math.round(this.zoom * 100)}%`;
     }
     installKeyboard() {
         const handle = (e) => {
@@ -328,7 +264,7 @@ export class ImageViewer {
             }
         };
         window.addEventListener('keydown', handle, { passive: true });
-        this._kbd = handle;
+        this.disposes.push(() => window.removeEventListener('keydown', handle));
     }
     installWheel(stage) {
         stage.addEventListener('wheel', e => {
@@ -418,16 +354,15 @@ export class ImageViewer {
         const prev = this.zoom;
         this.zoom = nextZoom;
         if (origin && this.imgEl) {
-            // 根据缩放中心调整平移，保持指针所指像素位置不变
-            const parent = this.imgEl.parentElement; // 容器尺寸只读取一次
-            const pan = this.pan; // 本地引用减少属性访问
+            const parent = this.imgEl.parentElement;
+            const pan = this.pan;
             const scale = this.zoom / prev;
-            if (scale !== 1) { // 仅在真实缩放时计算
+            if (scale !== 1) {
                 const centerX = (parent.clientWidth * 0.5) + pan.x;
                 const centerY = (parent.clientHeight * 0.5) + pan.y;
-                const dx = origin.x - centerX; // 指针相对当前中心偏移
+                const dx = origin.x - centerX;
                 const dy = origin.y - centerY;
-                const k = 1 - scale; // (offset - offset*scale) = offset*(1-scale)
+                const k = 1 - scale;
                 this.pan = { x: pan.x + dx * k, y: pan.y + dy * k };
             }
         }
@@ -445,29 +380,87 @@ export class ImageViewer {
         this.applyTransform();
     }
     applyTransform() {
-        var _a;
         if (!this.imgEl)
             return;
-        this.imgEl.style.transform = `translate(${this.pan.x}px, ${this.pan.y}px) scale(${this.zoom}) rotate(${this.rotation}deg)`;
-        const indicator = (_a = this.backdrop) === null || _a === void 0 ? void 0 : _a.querySelector('.iv-zoom-indicator');
-        this.updateZoomIndicator(indicator || undefined);
+        const { x, y, z, r } = { x: this.pan.x, y: this.pan.y, z: this.zoom, r: this.rotation };
+        this.imgEl.style.transform = `translate(${x}px, ${y}px) scale(${z}) rotate(${r}deg)`;
+        this.updateZoomIndicator();
     }
     go(i) {
-        var _a, _b;
         if (i < 0 || i >= this.images.length)
             return;
         this.index = i;
-        this.render((_a = this.backdrop) === null || _a === void 0 ? void 0 : _a.querySelector('.iv-counter'), (_b = this.backdrop) === null || _b === void 0 ? void 0 : _b.querySelector('.iv-zoom-indicator'));
+        this.render();
+    }
+    open(startIndex = 0) {
+        var _a, _b;
+        if (!this.images.length)
+            return;
+        this.index = Math.min(Math.max(0, startIndex), this.images.length - 1);
+        if (this.backdrop)
+            return;
+        document.body.classList.add('iv-lock');
+        const backdrop = createEl('div', { className: `iv-backdrop ${this.options.className}`.trim() });
+        if (this.options.closeOnBackdrop) {
+            backdrop.addEventListener('mousedown', e => {
+                if (e.target === backdrop)
+                    this.close();
+            });
+        }
+        const shell = createEl('div', { className: 'iv-shell' });
+        const stage = createEl('div', { className: 'iv-stage' });
+        const viewBox = createEl('div', { className: 'iv-viewbox' });
+        const tools = createEl('div', { className: 'iv-tools' });
+        const imgEl = createEl('img', { draggable: false });
+        viewBox.appendChild(imgEl);
+        stage.appendChild(viewBox);
+        stage.appendChild(tools);
+        // Click blank stage area to close
+        stage.addEventListener('click', e => { if (e.target === stage)
+            this.close(); });
+        // Single click on image closes if not dragged
+        imgEl.addEventListener('click', () => { if (!this.clickMoved)
+            this.close(); });
+        const zoomIndicator = createEl('div', { className: 'iv-zoom-indicator' });
+        const counter = createEl('div', { className: 'iv-counter' });
+        tools.appendChild(zoomIndicator);
+        tools.appendChild(counter);
+        // Side navigation buttons
+        tools.appendChild(this.sideBtn(() => this.prev(), 'left'));
+        tools.appendChild(this.sideBtn(() => this.next(), 'right'));
+        // Control buttons (zoom / rotate / reset)
+        const controls = createEl('div', { className: 'iv-controls' });
+        controls.append(this.ctrlBtn('zoom-in', 'Zoom In', () => this.adjustZoom(1.25)), this.ctrlBtn('zoom-out', 'Zoom Out', () => this.adjustZoom(0.8)), this.ctrlBtn('rotate-left', 'Rotate Left', () => this.rotate(-90)), this.ctrlBtn('rotate-right', 'Rotate Right', () => this.rotate(90)), this.ctrlBtn('reset', 'Reset', () => this.resetTransform(true)));
+        tools.appendChild(controls);
+        shell.appendChild(stage);
+        if (this.options.thumbnails) {
+            const thumbs = createEl('div', { className: 'iv-thumbs' });
+            this.images.forEach((it, i) => {
+                const t = createEl('img', { src: it.src, alt: it.alt || '', loading: 'lazy' });
+                t.addEventListener('click', () => this.go(i));
+                thumbs.appendChild(t);
+            });
+            shell.appendChild(thumbs);
+            this.thumbsEl = thumbs;
+        }
+        backdrop.appendChild(shell);
+        document.body.appendChild(backdrop);
+        requestAnimationFrame(() => backdrop.classList.add('iv-active'));
+        this.backdrop = backdrop;
+        this.imgEl = imgEl;
+        this.installInteractions(stage);
+        if (this.options.keyboard)
+            this.installKeyboard();
+        if (this.options.wheelZoom)
+            this.installWheel(stage);
+        this.render();
+        (_b = (_a = this.options).onOpen) === null || _b === void 0 ? void 0 : _b.call(_a);
     }
     next() { this.go(this.index + 1); }
     prev() { this.go(this.index - 1); }
     close() {
         if (!this.backdrop)
             return;
-        // Remove keyboard event handler if it exists
-        const handle = this._kbd;
-        if (handle)
-            window.removeEventListener('keydown', handle);
         // Play closing animation
         const bd = this.backdrop;
         bd.classList.remove('iv-active');
@@ -482,12 +475,11 @@ export class ImageViewer {
             (_b = (_a = this.options).onClose) === null || _b === void 0 ? void 0 : _b.call(_a);
         };
         bd.addEventListener('transitionend', done);
-        // Reset transform
-        this.resetTransform(true);
+        // Clean up event listeners
+        this.disposes.forEach(fn => fn());
+        this.disposes = [];
     }
     destroy() {
-        const mo = this._mo;
-        mo === null || mo === void 0 ? void 0 : mo.disconnect();
         this.close();
     }
 }

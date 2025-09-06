@@ -41,17 +41,18 @@ export declare class ImageViewer {
     private multiTouchDist;
     private origin;
     private clickMoved;
+    private disposes;
     constructor(opts?: ViewerOptions);
     private collect;
     private observeNewImages;
     private tryAddImage;
     private tryRemoveImage;
-    open(startIndex?: number): void;
     private sideBtn;
     private ctrlBtn;
     private icon;
     private render;
     private highlightThumb;
+    private updateCounter;
     private updateZoomIndicator;
     private installKeyboard;
     private installWheel;
@@ -65,6 +66,7 @@ export declare class ImageViewer {
     private resetTransform;
     private applyTransform;
     private go;
+    open(startIndex?: number): void;
     next(): void;
     prev(): void;
     close(): void;

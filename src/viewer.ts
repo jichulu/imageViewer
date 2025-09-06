@@ -76,7 +76,7 @@ export class ImageViewer {
     private multiTouchDist = 0;
     private origin = { x: 0, y: 0 }; // pinch origin
     private clickMoved = false; // track if dragged to suppress click-close
-    private disposes: (() => void)[] = []; // event unbinders
+    private disposes: [fn: () => void, close: boolean][] = []; // event unbinders
 
     constructor(opts: ViewerOptions = {}) {
         const scope = typeof opts.scope === 'string' ? document.querySelector<HTMLElement>(opts.scope) : opts.scope ?? null;
@@ -118,13 +118,22 @@ export class ImageViewer {
             }
         });
         mo.observe(root, { childList: true, subtree: true });
-        this.disposes.push(() => mo.disconnect());
+        this.disposes.push([() => mo.disconnect(), false]);
     }
 
     private tryAddImage(img: HTMLImageElement) {
-        if (img.dataset.noViewer === 'true' || img.dataset.ivBound === '1') return;
-        if (this.options.filter && !this.options.filter(img)) return;
-        if (!img.src) return;
+        if (img.dataset.noViewer === 'true' || img.dataset.ivBound === '1') {
+            console.log('skip', img);
+            return;
+        }
+        if (this.options.filter && !this.options.filter(img)) {
+            console.log('filtered', img);
+            return;
+        }
+        if (!img.src) {
+            console.log('no src', img);
+            return;
+        }
         const src = img.currentSrc || img.src;
         const item: ImageItem = { src, alt: img.alt, title: img.title || img.alt };
         this.images.push(item);
@@ -209,7 +218,7 @@ export class ImageViewer {
             }
         };
         window.addEventListener('keydown', handle, { passive: true });
-        this.disposes.push(() => window.removeEventListener('keydown', handle));
+        this.disposes.push([() => window.removeEventListener('keydown', handle), true]);
     }
 
     private installWheel(stage: HTMLElement) {
@@ -355,7 +364,7 @@ export class ImageViewer {
         if (!backdrop) return;
         if (this.options.className) backdrop.classList.add(...this.options.className.split(/\s+/).filter(Boolean));
         const stage = backdrop.querySelector<HTMLElement>('.iv-stage');
-        const imgEl = backdrop.querySelector<HTMLImageElement>('.iv-viewbox img');
+        const imgEl = backdrop.querySelector<HTMLImageElement>('.iv-stage img');
         let thumbs = backdrop.querySelector<HTMLElement>('.iv-thumbs');
         if (!stage || !imgEl) return;
         // thumbnails handling
@@ -426,13 +435,14 @@ export class ImageViewer {
             this.options.onClose?.();
         };
         bd.addEventListener('transitionend', done);
-        // Clean up event listeners
-        this.disposes.forEach(fn => fn());
-        this.disposes = [];
+        this.disposes.forEach(item => item[1] && item[0]());
     }
 
     destroy() {
         this.close();
+        // Clean up event listeners
+        this.disposes.forEach(item => item[0]());
+        this.disposes = [];
     }
 }
 

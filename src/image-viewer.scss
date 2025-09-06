@@ -73,15 +73,6 @@
   background: var(--iv-stage-bg);
   border-radius: var(--iv-radius);
 
-  .iv-tools {
-    opacity: .1;
-    transition: 1s ease-out;
-  }
-
-  &:hover .iv-tools {
-    opacity: 1;
-  }
-
   img {
     transform-origin: center;
     display: block;
@@ -91,6 +82,15 @@
     user-select: none;
     -webkit-user-drag: none;
     transition: .3s ease;
+  }
+
+  .iv-tools {
+    opacity: .1;
+    transition: 1s ease-out;
+  }
+
+  &:hover .iv-tools {
+    opacity: 1;
   }
 
   &.iv-grabbing {

@@ -86,6 +86,8 @@ interface ViewerOptions {
   onClose?: () => void;
   images?: { src: string; alt?: string; title?: string }[]; // Provide images directly
   filter?: (img: HTMLImageElement) => boolean;              // Filter which <img> elements are included
+  minZoom?: number; // default 0.25
+  maxZoom?: number; // default 8
 }
 ```
 

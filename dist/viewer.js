@@ -10,6 +10,8 @@ const DEFAULTS = {
     onOpen: undefined,
     onClose: undefined,
     images: undefined,
+    minZoom: 0.25,
+    maxZoom: 8
 };
 export class ImageViewer {
     constructor(opts = {}) {
@@ -115,9 +117,12 @@ export class ImageViewer {
         shell.className = 'iv-shell';
         const stage = document.createElement('div');
         stage.className = 'iv-stage';
+        const viewBox = document.createElement('div');
+        viewBox.className = 'iv-viewbox';
+        stage.appendChild(viewBox);
         const imgEl = document.createElement('img');
         imgEl.draggable = false;
-        stage.appendChild(imgEl);
+        viewBox.appendChild(imgEl);
         const tools = document.createElement('div');
         tools.className = 'iv-tools';
         stage.appendChild(tools);
@@ -308,11 +313,18 @@ export class ImageViewer {
             // Derive scale factor from wheel delta, clamp extremes
             const step = Math.max(-1, Math.min(1, e.deltaY / 100));
             const factor = step < 0 ? 1 - step * 0.25 : 1 / (1 + step * 0.25); // smooth scaling
-            const rect = this.imgEl.getBoundingClientRect();
-            const cx = e.clientX - rect.left - rect.width / 2;
-            const cy = e.clientY - rect.top - rect.height / 2;
-            this.adjustZoom(factor, { x: cx, y: cy });
+            const origin = this.calculateZoomOrigin(e.clientX, e.clientY);
+            this.adjustZoom(factor, origin);
         }, { passive: false });
+    }
+    calculateZoomOrigin(clientX, clientY) {
+        const parent = this.imgEl.parentElement;
+        const rect = parent.getBoundingClientRect();
+        const style = window.getComputedStyle(parent);
+        const paddings = { left: parseFloat(style.paddingLeft), top: parseFloat(style.paddingTop) };
+        const cx = clientX - rect.left - paddings.left;
+        const cy = clientY - rect.top - paddings.top;
+        return { x: cx, y: cy };
     }
     installInteractions(stage) {
         // Mouse drag for panning
@@ -350,9 +362,11 @@ export class ImageViewer {
             else if (e.touches.length === 2) {
                 this.isPanning = false;
                 this.multiTouchDist = this.distance(e.touches[0], e.touches[1]);
-                this.origin = this.midpoint(e.touches[0], e.touches[1]);
+                const midpoint = this.midpoint(e.touches[0], e.touches[1]);
+                this.origin = this.calculateZoomOrigin(midpoint.x, midpoint.y);
+                e.preventDefault();
             }
-        }, { passive: true });
+        }, { passive: false });
         stage.addEventListener('touchmove', e => {
             if (e.touches.length === 1 && this.isPanning) {
                 const dx = e.touches[0].clientX - this.pointerStart.x;
@@ -376,15 +390,22 @@ export class ImageViewer {
     midpoint(a, b) { return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }; }
     adjustZoom(factor, origin) { this.adjustZoomRaw(this.zoom * factor, origin); }
     adjustZoomRaw(nextZoom, origin) {
-        nextZoom = Math.min(8, Math.max(0.25, nextZoom));
+        nextZoom = Math.min(this.options.maxZoom, Math.max(this.options.minZoom, nextZoom));
         const prev = this.zoom;
         this.zoom = nextZoom;
         if (origin && this.imgEl) {
+            // 根据缩放中心调整平移，保持指针所指像素位置不变
+            const parent = this.imgEl.parentElement; // 容器尺寸只读取一次
+            const pan = this.pan; // 本地引用减少属性访问
             const scale = this.zoom / prev;
-            this.pan = {
-                x: origin.x + (this.pan.x - origin.x) * scale,
-                y: origin.y + (this.pan.y - origin.y) * scale,
-            };
+            if (scale !== 1) { // 仅在真实缩放时计算
+                const centerX = (parent.clientWidth * 0.5) + pan.x;
+                const centerY = (parent.clientHeight * 0.5) + pan.y;
+                const dx = origin.x - centerX; // 指针相对当前中心偏移
+                const dy = origin.y - centerY;
+                const k = 1 - scale; // (offset - offset*scale) = offset*(1-scale)
+                this.pan = { x: pan.x + dx * k, y: pan.y + dy * k };
+            }
         }
         this.applyTransform();
     }

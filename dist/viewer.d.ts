@@ -22,6 +22,8 @@ export interface ViewerOptions {
     images?: ImageItem[];
     /** Filter function: return true to include an <img> */
     filter?: (img: HTMLImageElement) => boolean;
+    minZoom?: number;
+    maxZoom?: number;
 }
 export declare class ImageViewer {
     private options;
@@ -52,6 +54,7 @@ export declare class ImageViewer {
     private updateZoomIndicator;
     private installKeyboard;
     private installWheel;
+    private calculateZoomOrigin;
     private installInteractions;
     private distance;
     private midpoint;

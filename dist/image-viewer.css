@@ -6,7 +6,7 @@
   --iv-accent: #3b82f6;
   --iv-z: 9999;
   /* Added extracted color variables */
-  --iv-btn-bg: #1e293b;
+  --iv-btn-bg: #1e293b4d;
   --iv-btn-hover: #334155;
   --iv-stage-bg: #1111114d;
   --iv-overlay: #0009;
@@ -23,7 +23,7 @@
   z-index: var(--iv-z);
   padding: clamp(8px, 2vw, 40px);
   opacity: 0;
-  transition: opacity cubic-bezier(0.075, 0.82, 0.165, 1) ease;
+  transition: opacity 0.5s ease;
 }
 .iv-backdrop.iv-active {
   opacity: 1;
@@ -36,7 +36,7 @@
   opacity: 1;
 }
 .iv-backdrop.iv-leave .iv-shell {
-  transform: scale(0.94) translateY(10px);
+  transform: scale(0.9) translateY(10px);
   opacity: 0;
 }
 
@@ -77,6 +77,8 @@
   opacity: 1;
 }
 .iv-stage img {
+  transform-origin: center;
+  display: block;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
@@ -99,7 +101,7 @@
   border: none;
   color: #fff;
   width: 46px;
-  height: 70px;
+  height: 46px;
   display: flex;
   align-items: center;
   justify-content: center;

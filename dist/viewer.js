@@ -1,488 +1,57 @@
-// ImageViewer: modal image viewer (thumbnails / zoom / pan / keyboard navigation)
-const DEFAULTS = {
-    scope: null,
-    thumbnails: true,
-    closeOnBackdrop: true,
-    keyboard: true,
-    wheelZoom: true,
-    className: '',
-    filter: () => true,
-    onOpen: undefined,
-    onClose: undefined,
-    images: undefined,
-    minZoom: 0.25,
-    maxZoom: 8
-};
-function createEl(tag, props) {
-    const el = document.createElement(tag);
-    if (props) {
-        const { style, ...rest } = props;
-        Object.assign(el, rest);
-        if (style)
-            el.style.cssText = style;
-    }
-    return el;
-}
-export class ImageViewer {
-    constructor(opts = {}) {
-        var _a;
-        this.images = [];
-        this.index = 0;
-        this.zoom = 1;
-        this.rotation = 0; // rotation angle (deg)
-        this.pan = { x: 0, y: 0 };
-        this.isPanning = false;
-        this.panStart = { x: 0, y: 0 };
-        this.pointerStart = { x: 0, y: 0 };
-        this.multiTouchDist = 0;
-        this.origin = { x: 0, y: 0 }; // pinch origin
-        this.clickMoved = false; // track if dragged to suppress click-close
-        this.disposes = []; // event unbinders
-        const scope = typeof opts.scope === 'string' ? document.querySelector(opts.scope) : (_a = opts.scope) !== null && _a !== void 0 ? _a : null;
-        this.options = { ...DEFAULTS, ...opts, scope };
-        this.collect();
-        this.observeNewImages();
-    }
-    // Collect images from DOM
-    collect() {
-        if (this.options.images) {
-            this.images = [...this.options.images];
-            return;
-        }
-        this.images = [];
-        const root = this.options.scope || document.body;
-        const nodes = root.querySelectorAll('img');
-        nodes.forEach(img => {
-            this.tryAddImage(img);
-        });
-    }
-    // Observe newly added images
-    observeNewImages() {
-        if (this.options.images)
-            return; // skip if images provided directly
-        const root = this.options.scope || document.body;
-        const processMutation = (nodes, fn) => {
-            nodes.forEach(node => {
-                var _a;
-                if (node.nodeType !== 1)
-                    return;
-                const el = node;
-                if (el.tagName === 'IMG')
-                    fn(el);
-                (_a = el.querySelectorAll) === null || _a === void 0 ? void 0 : _a.call(el, 'img').forEach(img => fn(img));
-            });
-        };
-        const mo = new MutationObserver(muts => {
-            for (const m of muts) {
-                processMutation(m.addedNodes, node => this.tryAddImage(node));
-                processMutation(m.removedNodes, node => this.tryRemoveImage(node));
-            }
-        });
-        mo.observe(root, { childList: true, subtree: true });
-        this.disposes.push(() => mo.disconnect());
-    }
-    tryAddImage(img) {
-        if (img.dataset.noViewer === 'true' || img.dataset.ivBound === '1')
-            return;
-        if (this.options.filter && !this.options.filter(img))
-            return;
-        if (!img.src)
-            return;
-        const src = img.currentSrc || img.src;
-        const item = { src, alt: img.alt, title: img.title || img.alt };
-        this.images.push(item);
-        img.style.cursor = 'zoom-in';
-        img.dataset.ivBound = '1';
-        img.addEventListener('click', e => {
-            e.preventDefault();
-            const idx = this.images.findIndex(i => i.src === src);
-            if (idx >= 0)
-                this.open(idx);
-        });
-        if (this.backdrop && this.thumbsEl) {
-            const t = createEl('img', { src: item.src, alt: item.alt || '', loading: 'lazy' });
-            t.addEventListener('click', () => {
-                const idx = this.images.findIndex(i => i.src === src);
-                if (idx >= 0)
-                    this.go(idx);
-            });
-            this.thumbsEl.appendChild(t);
-            this.updateCounter();
-        }
-    }
-    tryRemoveImage(img) {
-        if (img.dataset.ivBound !== '1')
-            return;
-        const src = img.currentSrc || img.src;
-        const idx = this.images.findIndex(i => i.src === src);
-        if (idx >= 0)
-            this.images.splice(idx, 1);
-        delete img.dataset.ivBound;
-        img.style.cursor = '';
-        img.removeEventListener('click', () => { });
-        if (this.backdrop && this.thumbsEl) {
-            const thumbs = Array.from(this.thumbsEl.querySelectorAll('img'));
-            const t = thumbs.find(t => (t.currentSrc || t.src) === src);
-            if (t)
-                t.remove();
-            this.updateCounter();
-        }
-    }
-    sideBtn(fn, side) {
-        const b = createEl('button', {
-            type: 'button',
-            className: `iv-nav-btn iv-nav-btn-${side}`,
-            title: side === 'left' ? 'Previous image' : 'Next image',
-            ariaLabel: side === 'left' ? 'Previous image' : 'Next image'
-        });
-        b.appendChild(this.icon(side === 'left' ? 'arrow-left' : 'arrow-right'));
-        b.addEventListener('click', e => { e.stopPropagation(); fn(); });
-        return b;
-    }
-    ctrlBtn(iconName, title, fn) {
-        const b = createEl('button', { type: 'button', title, ariaLabel: title, className: 'iv-ctrl-btn' });
-        b.appendChild(this.icon(iconName));
-        b.addEventListener('click', e => { e.stopPropagation(); fn(); });
-        return b;
-    }
-    // Create an inline SVG icon (stroke based, 24x24 viewBox)
-    icon(name) {
-        const svgNS = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(svgNS, 'svg');
-        svg.setAttribute('viewBox', '0 0 24 24');
-        svg.setAttribute('aria-hidden', 'true');
-        svg.classList.add('iv-icon');
-        const path = (d, extra = {}) => {
-            const p = document.createElementNS(svgNS, 'path');
-            p.setAttribute('d', d);
-            Object.entries(extra).forEach(([k, v]) => { if (typeof v === 'string')
-                p.setAttribute(k, v); });
-            return p;
-        };
-        switch (name) {
-            case 'arrow-left':
-                svg.append(path('M15 4l-8 8 8 8', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-                break;
-            case 'arrow-right':
-                svg.append(path('M9 4l8 8-8 8', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-                break;
-            case 'zoom-in':
-                svg.append(path('M11 17a6 6 0 100-12 6 6 0 000 12z')); // circle
-                svg.append(path('M11 9v4M9 11h4', { 'stroke-linecap': 'round' }));
-                svg.append(path('M16.5 16.5L21 21', { 'stroke-linecap': 'round' }));
-                break;
-            case 'zoom-out':
-                svg.append(path('M11 17a6 6 0 100-12 6 6 0 000 12z'));
-                svg.append(path('M9 11h4', { 'stroke-linecap': 'round' }));
-                svg.append(path('M16.5 16.5L21 21', { 'stroke-linecap': 'round' }));
-                break;
-            case 'rotate-left':
-                svg.append(path('M8 4v4h4')); // corner arrow
-                svg.append(path('M8 8a6 6 0 016-6 6 6 0 010 12 3 3 0 00-3 3v3', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-                break;
-            case 'rotate-right':
-                svg.append(path('M16 4v4h-4'));
-                svg.append(path('M16 8a6 6 0 00-6-6 6 6 0 000 12 3 3 0 013 3v3', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-                break;
-            case 'reset':
-                svg.append(path('M12 3v3')); // crosshair
-                svg.append(path('M12 18v3'));
-                svg.append(path('M3 12h3'));
-                svg.append(path('M18 12h3'));
-                svg.append(path('M12 8a4 4 0 100 8 4 4 0 000-8z'));
-                break;
-            default:
-                svg.append(path('M4 4h16v16H4z')); // fallback square
-        }
-        svg.querySelectorAll('path').forEach(p => {
-            if (!p.getAttribute('fill'))
-                p.setAttribute('fill', 'none');
-            p.setAttribute('stroke', 'currentColor');
-            p.setAttribute('stroke-width', '2');
-        });
-        return svg;
-    }
-    render() {
-        if (!this.imgEl)
-            return;
-        const item = this.images[this.index];
-        this.imgEl.src = item.src;
-        this.highlightThumb();
-        this.resetTransform(true);
-        this.updateZoomIndicator();
-        this.updateCounter();
-    }
-    highlightThumb() {
-        if (!this.thumbsEl)
-            return;
-        const imgs = Array.from(this.thumbsEl.querySelectorAll('img'));
-        imgs.forEach((el, idx) => { el.dataset.active = String(idx === this.index); });
-        const active = imgs[this.index];
-        if (active) {
-            const r = active.getBoundingClientRect();
-            const pr = this.thumbsEl.getBoundingClientRect();
-            if (r.left < pr.left || r.right > pr.right)
-                active.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
-        }
-    }
-    updateCounter() {
-        var _a;
-        const counter = (_a = this.backdrop) === null || _a === void 0 ? void 0 : _a.querySelector('.iv-counter');
-        if (counter)
-            counter.textContent = `${this.index + 1} / ${this.images.length}`;
-    }
-    updateZoomIndicator() {
-        var _a;
-        const zoomIndicator = (_a = this.backdrop) === null || _a === void 0 ? void 0 : _a.querySelector('.iv-zoom-indicator');
-        if (zoomIndicator)
-            zoomIndicator.textContent = `${Math.round(this.zoom * 100)}%`;
-    }
-    installKeyboard() {
-        const handle = (e) => {
-            if (!this.backdrop)
-                return;
-            switch (e.key) {
-                case 'Escape':
-                    this.close();
-                    break;
-                case 'ArrowRight':
-                    this.next();
-                    break;
-                case 'ArrowLeft':
-                    this.prev();
-                    break;
-                case '+':
-                case '=':
-                    this.adjustZoom(1.25);
-                    break;
-                case '-':
-                    this.adjustZoom(0.8);
-                    break;
-                case '0':
-                    this.resetTransform();
-                    break;
-            }
-        };
-        window.addEventListener('keydown', handle, { passive: true });
-        this.disposes.push(() => window.removeEventListener('keydown', handle));
-    }
-    installWheel(stage) {
-        stage.addEventListener('wheel', e => {
-            // Direct wheel zoom (no Ctrl/⌘ required)
-            e.preventDefault();
-            // Derive scale factor from wheel delta, clamp extremes
-            const step = Math.max(-1, Math.min(1, e.deltaY / 100));
-            const factor = step < 0 ? 1 - step * 0.25 : 1 / (1 + step * 0.25); // smooth scaling
-            const origin = this.calculateZoomOrigin(e.clientX, e.clientY);
-            this.adjustZoom(factor, origin);
-        }, { passive: false });
-    }
-    calculateZoomOrigin(clientX, clientY) {
-        const parent = this.imgEl.parentElement;
-        const rect = parent.getBoundingClientRect();
-        const style = window.getComputedStyle(parent);
-        const paddings = { left: parseFloat(style.paddingLeft), top: parseFloat(style.paddingTop) };
-        const cx = clientX - rect.left - paddings.left;
-        const cy = clientY - rect.top - paddings.top;
-        return { x: cx, y: cy };
-    }
-    installInteractions(stage) {
-        // Mouse drag for panning
-        stage.addEventListener('mousedown', e => {
-            if (e.button !== 0)
-                return;
-            this.isPanning = true;
-            this.panStart = { ...this.pan };
-            this.pointerStart = { x: e.clientX, y: e.clientY };
-            this.clickMoved = false;
-            stage.classList.add('iv-grabbing');
-        });
-        window.addEventListener('mousemove', e => {
-            if (!this.isPanning)
-                return;
-            const dx = e.clientX - this.pointerStart.x;
-            const dy = e.clientY - this.pointerStart.y;
-            this.pan = { x: this.panStart.x + dx, y: this.panStart.y + dy };
-            if (Math.abs(dx) > 3 || Math.abs(dy) > 3)
-                this.clickMoved = true;
-            this.applyTransform();
-        });
-        window.addEventListener('mouseup', () => {
-            this.isPanning = false;
-            stage.classList.remove('iv-grabbing');
-        });
-        // Touch: single-finger pan, two-finger pinch zoom
-        stage.addEventListener('touchstart', e => {
-            if (e.touches.length === 1) {
-                this.isPanning = true;
-                this.panStart = { ...this.pan };
-                this.pointerStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                stage.classList.add('iv-grabbing');
-            }
-            else if (e.touches.length === 2) {
-                this.isPanning = false;
-                this.multiTouchDist = this.distance(e.touches[0], e.touches[1]);
-                const midpoint = this.midpoint(e.touches[0], e.touches[1]);
-                this.origin = this.calculateZoomOrigin(midpoint.x, midpoint.y);
-                e.preventDefault();
-            }
-        }, { passive: false });
-        stage.addEventListener('touchmove', e => {
-            if (e.touches.length === 1 && this.isPanning) {
-                const dx = e.touches[0].clientX - this.pointerStart.x;
-                const dy = e.touches[0].clientY - this.pointerStart.y;
-                this.pan = { x: this.panStart.x + dx, y: this.panStart.y + dy };
-                this.applyTransform();
-            }
-            else if (e.touches.length === 2) {
-                const dist = this.distance(e.touches[0], e.touches[1]);
-                const factor = dist / this.multiTouchDist;
-                this.adjustZoomRaw(this.zoom * factor, this.origin);
-                this.multiTouchDist = dist;
-            }
-        }, { passive: true });
-        stage.addEventListener('touchend', () => {
-            this.isPanning = false;
-            stage.classList.remove('iv-grabbing');
-        }, { passive: true });
-    }
-    distance(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
-    midpoint(a, b) { return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }; }
-    adjustZoom(factor, origin) { this.adjustZoomRaw(this.zoom * factor, origin); }
-    adjustZoomRaw(nextZoom, origin) {
-        nextZoom = Math.min(this.options.maxZoom, Math.max(this.options.minZoom, nextZoom));
-        const prev = this.zoom;
-        this.zoom = nextZoom;
-        if (origin && this.imgEl) {
-            const parent = this.imgEl.parentElement;
-            const pan = this.pan;
-            const scale = this.zoom / prev;
-            if (scale !== 1) {
-                const centerX = (parent.clientWidth * 0.5) + pan.x;
-                const centerY = (parent.clientHeight * 0.5) + pan.y;
-                const dx = origin.x - centerX;
-                const dy = origin.y - centerY;
-                const k = 1 - scale;
-                this.pan = { x: pan.x + dx * k, y: pan.y + dy * k };
-            }
-        }
-        this.applyTransform();
-    }
-    rotate(delta) {
-        this.rotation = (this.rotation + delta);
-        this.applyTransform();
-    }
-    resetTransform(resetRotation = false) {
-        this.zoom = 1;
-        this.pan = { x: 0, y: 0 };
-        if (resetRotation)
-            this.rotation = 0;
-        this.applyTransform();
-    }
-    applyTransform() {
-        if (!this.imgEl)
-            return;
-        const { x, y, z, r } = { x: this.pan.x, y: this.pan.y, z: this.zoom, r: this.rotation };
-        this.imgEl.style.transform = `translate(${x}px, ${y}px) scale(${z}) rotate(${r}deg)`;
-        this.updateZoomIndicator();
-    }
-    go(i) {
-        if (i < 0 || i >= this.images.length)
-            return;
-        this.index = i;
-        this.render();
-    }
-    open(startIndex = 0) {
-        var _a, _b;
-        if (!this.images.length)
-            return;
-        this.index = Math.min(Math.max(0, startIndex), this.images.length - 1);
-        if (this.backdrop)
-            return;
-        document.body.classList.add('iv-lock');
-        const backdrop = createEl('div', { className: `iv-backdrop ${this.options.className}`.trim() });
-        if (this.options.closeOnBackdrop) {
-            backdrop.addEventListener('mousedown', e => {
-                if (e.target === backdrop)
-                    this.close();
-            });
-        }
-        const shell = createEl('div', { className: 'iv-shell' });
-        const stage = createEl('div', { className: 'iv-stage' });
-        const viewBox = createEl('div', { className: 'iv-viewbox' });
-        const tools = createEl('div', { className: 'iv-tools' });
-        const imgEl = createEl('img', { draggable: false });
-        viewBox.appendChild(imgEl);
-        stage.appendChild(viewBox);
-        stage.appendChild(tools);
-        // Click blank stage area to close
-        stage.addEventListener('click', e => { if (e.target === stage)
-            this.close(); });
-        // Single click on image closes if not dragged
-        imgEl.addEventListener('click', () => { if (!this.clickMoved)
-            this.close(); });
-        const zoomIndicator = createEl('div', { className: 'iv-zoom-indicator' });
-        const counter = createEl('div', { className: 'iv-counter' });
-        tools.appendChild(zoomIndicator);
-        tools.appendChild(counter);
-        // Side navigation buttons
-        tools.appendChild(this.sideBtn(() => this.prev(), 'left'));
-        tools.appendChild(this.sideBtn(() => this.next(), 'right'));
-        // Control buttons (zoom / rotate / reset)
-        const controls = createEl('div', { className: 'iv-controls' });
-        controls.append(this.ctrlBtn('zoom-in', 'Zoom In', () => this.adjustZoom(1.25)), this.ctrlBtn('zoom-out', 'Zoom Out', () => this.adjustZoom(0.8)), this.ctrlBtn('rotate-left', 'Rotate Left', () => this.rotate(-90)), this.ctrlBtn('rotate-right', 'Rotate Right', () => this.rotate(90)), this.ctrlBtn('reset', 'Reset', () => this.resetTransform(true)));
-        tools.appendChild(controls);
-        shell.appendChild(stage);
-        if (this.options.thumbnails) {
-            const thumbs = createEl('div', { className: 'iv-thumbs' });
-            this.images.forEach((it, i) => {
-                const t = createEl('img', { src: it.src, alt: it.alt || '', loading: 'lazy' });
-                t.addEventListener('click', () => this.go(i));
-                thumbs.appendChild(t);
-            });
-            shell.appendChild(thumbs);
-            this.thumbsEl = thumbs;
-        }
-        backdrop.appendChild(shell);
-        document.body.appendChild(backdrop);
-        requestAnimationFrame(() => backdrop.classList.add('iv-active'));
-        this.backdrop = backdrop;
-        this.imgEl = imgEl;
-        this.installInteractions(stage);
-        if (this.options.keyboard)
-            this.installKeyboard();
-        if (this.options.wheelZoom)
-            this.installWheel(stage);
-        this.render();
-        (_b = (_a = this.options).onOpen) === null || _b === void 0 ? void 0 : _b.call(_a);
-    }
-    next() { this.go(this.index + 1); }
-    prev() { this.go(this.index - 1); }
-    close() {
-        if (!this.backdrop)
-            return;
-        // Play closing animation
-        const bd = this.backdrop;
-        bd.classList.remove('iv-active');
-        bd.classList.add('iv-leave');
-        const done = () => {
-            var _a, _b;
-            bd.removeEventListener('transitionend', done);
-            bd.remove();
-            this.backdrop = undefined;
-            this.imgEl = undefined;
-            document.body.classList.remove('iv-lock');
-            (_b = (_a = this.options).onClose) === null || _b === void 0 ? void 0 : _b.call(_a);
-        };
-        bd.addEventListener('transitionend', done);
-        // Clean up event listeners
-        this.disposes.forEach(fn => fn());
-        this.disposes = [];
-    }
-    destroy() {
-        this.close();
-    }
-}
-// Factory function
-export function createImageViewer(options) { return new ImageViewer(options); }
+// Built with tsup (ESM)
+var m=`<div class="iv-backdrop">\r
+  <div class="iv-shell">\r
+    <div class="iv-stage">\r
+      <div class="iv-viewbox">\r
+        <img class="iv-image" draggable="false" />\r
+      </div>\r
+      <div class="iv-tools">\r
+        <div class="iv-zoom-indicator"></div>\r
+        <div class="iv-counter"></div>\r
+        <button type="button" class="iv-nav-btn iv-nav-btn-left" title="Previous image" aria-label="Previous image" data-action="prev">\r
+          <svg viewBox="0 0 24 24" class="iv-icon" aria-hidden="true"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>\r
+        </button>\r
+        <button type="button" class="iv-nav-btn iv-nav-btn-right" title="Next image" aria-label="Next image" data-action="next">\r
+          <svg viewBox="0 0 24 24" class="iv-icon" aria-hidden="true"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>\r
+        </button>\r
+        <div class="iv-controls">\r
+          <button type="button" class="iv-ctrl-btn" title="Zoom In" aria-label="Zoom In" data-action="zoom-in">\r
+            <svg viewBox="0 0 24 24" class="iv-icon" aria-hidden="true">\r
+              <path d="M11 17a6 6 0 100-12 6 6 0 000 12z" stroke="currentColor" stroke-width="2" fill="none"/>\r
+              <path d="M11 9v4M9 11h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>\r
+              <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>\r
+            </svg>\r
+          </button>\r
+          <button type="button" class="iv-ctrl-btn" title="Zoom Out" aria-label="Zoom Out" data-action="zoom-out">\r
+            <svg viewBox="0 0 24 24" class="iv-icon" aria-hidden="true">\r
+              <path d="M11 17a6 6 0 100-12 6 6 0 000 12z" stroke="currentColor" stroke-width="2" fill="none"/>\r
+              <path d="M9 11h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>\r
+              <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>\r
+            </svg>\r
+          </button>\r
+          <button type="button" class="iv-ctrl-btn" title="Rotate Left" aria-label="Rotate Left" data-action="rotate-left">\r
+            <svg viewBox="0 0 24 24" class="iv-icon" aria-hidden="true">\r
+              <path d="M8 4v4h4" stroke="currentColor" stroke-width="2" fill="none"/>\r
+              <path d="M8 8a6 6 0 016-6 6 6 0 010 12 3 3 0 00-3 3v3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>\r
+            </svg>\r
+          </button>\r
+            <button type="button" class="iv-ctrl-btn" title="Rotate Right" aria-label="Rotate Right" data-action="rotate-right">\r
+            <svg viewBox="0 0 24 24" class="iv-icon" aria-hidden="true">\r
+              <path d="M16 4v4h-4" stroke="currentColor" stroke-width="2" fill="none"/>\r
+              <path d="M16 8a6 6 0 00-6-6 6 6 0 000 12 3 3 0 013 3v3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>\r
+            </svg>\r
+          </button>\r
+          <button type="button" class="iv-ctrl-btn" title="Reset" aria-label="Reset" data-action="reset">\r
+            <svg viewBox="0 0 24 24" class="iv-icon" aria-hidden="true">\r
+              <path d="M12 3v3M12 18v3M3 12h3M18 12h3" stroke="currentColor" stroke-width="2" fill="none"/>\r
+              <path d="M12 8a4 4 0 100 8 4 4 0 000-8z" stroke="currentColor" stroke-width="2" fill="none"/>\r
+            </svg>\r
+          </button>\r
+        </div>\r
+      </div>\r
+    </div>\r
+    <div class="iv-thumbs"></div>\r
+  </div>\r
+</div>\r
+`;var g={scope:null,thumbnails:true,closeOnBackdrop:true,keyboard:true,wheelZoom:true,className:"",filter:()=>true,onOpen:void 0,onClose:void 0,images:void 0,minZoom:.25,maxZoom:8};function p(d,t){let e=document.createElement(d);if(t){let{style:i,...s}=t;Object.assign(e,s),i&&(e.style.cssText=i);}return e}var u=class{constructor(t={}){this.images=[];this.index=0;this.zoom=1;this.rotation=0;this.pan={x:0,y:0};this.isPanning=false;this.panStart={x:0,y:0};this.pointerStart={x:0,y:0};this.multiTouchDist=0;this.origin={x:0,y:0};this.clickMoved=false;this.disposes=[];var i;let e=typeof t.scope=="string"?document.querySelector(t.scope):(i=t.scope)!=null?i:null;this.options={...g,...t,scope:e},this.collect(),this.observeNewImages();}collect(){if(this.options.images){this.images=[...this.options.images];return}this.images=[],(this.options.scope||document.body).querySelectorAll("img").forEach(i=>{this.tryAddImage(i);});}observeNewImages(){if(this.options.images)return;let t=this.options.scope||document.body,e=(s,o)=>{s.forEach(n=>{var l;if(n.nodeType!==1)return;let a=n;a.tagName==="IMG"&&o(a),(l=a.querySelectorAll)==null||l.call(a,"img").forEach(r=>o(r));});},i=new MutationObserver(s=>{for(let o of s)e(o.addedNodes,n=>this.tryAddImage(n)),e(o.removedNodes,n=>this.tryRemoveImage(n));});i.observe(t,{childList:true,subtree:true}),this.disposes.push(()=>i.disconnect());}tryAddImage(t){if(t.dataset.noViewer==="true"||t.dataset.ivBound==="1"||this.options.filter&&!this.options.filter(t)||!t.src)return;let e=t.currentSrc||t.src,i={src:e,alt:t.alt,title:t.title||t.alt};if(this.images.push(i),t.style.cursor="zoom-in",t.dataset.ivBound="1",t.addEventListener("click",s=>{s.preventDefault();let o=this.images.findIndex(n=>n.src===e);o>=0&&this.open(o);}),this.backdrop&&this.thumbsEl){let s=p("img",{src:i.src,alt:i.alt||"",loading:"lazy"});s.addEventListener("click",()=>{let o=this.images.findIndex(n=>n.src===e);o>=0&&this.go(o);}),this.thumbsEl.appendChild(s),this.updateCounter();}}tryRemoveImage(t){if(t.dataset.ivBound!=="1")return;let e=t.currentSrc||t.src,i=this.images.findIndex(s=>s.src===e);if(i>=0&&this.images.splice(i,1),delete t.dataset.ivBound,t.style.cursor="",t.removeEventListener("click",()=>{}),this.backdrop&&this.thumbsEl){let o=Array.from(this.thumbsEl.querySelectorAll("img")).find(n=>(n.currentSrc||n.src)===e);o&&o.remove(),this.updateCounter();}}render(){if(!this.imgEl)return;let t=this.images[this.index];this.imgEl.src=t.src,this.highlightThumb(),this.resetTransform(true),this.updateZoomIndicator(),this.updateCounter();}highlightThumb(){if(!this.thumbsEl)return;let t=Array.from(this.thumbsEl.querySelectorAll("img"));t.forEach((i,s)=>{i.dataset.active=String(s===this.index);});let e=t[this.index];if(e){let i=e.getBoundingClientRect(),s=this.thumbsEl.getBoundingClientRect();(i.left<s.left||i.right>s.right)&&e.scrollIntoView({inline:"center",behavior:"smooth",block:"nearest"});}}updateCounter(){var e;let t=(e=this.backdrop)==null?void 0:e.querySelector(".iv-counter");t&&(t.textContent=`${this.index+1} / ${this.images.length}`);}updateZoomIndicator(){var e;let t=(e=this.backdrop)==null?void 0:e.querySelector(".iv-zoom-indicator");t&&(t.textContent=`${Math.round(this.zoom*100)}%`);}installKeyboard(){let t=e=>{if(this.backdrop)switch(e.key){case "Escape":this.close();break;case "ArrowRight":this.next();break;case "ArrowLeft":this.prev();break;case "+":case "=":this.adjustZoom(1.25);break;case "-":this.adjustZoom(.8);break;case "0":this.resetTransform();break}};window.addEventListener("keydown",t,{passive:true}),this.disposes.push(()=>window.removeEventListener("keydown",t));}installWheel(t){t.addEventListener("wheel",e=>{e.preventDefault();let i=Math.max(-1,Math.min(1,e.deltaY/100)),s=i<0?1-i*.25:1/(1+i*.25),o=this.calculateZoomOrigin(e.clientX,e.clientY);this.adjustZoom(s,o);},{passive:false});}calculateZoomOrigin(t,e){let i=this.imgEl.parentElement,s=i.getBoundingClientRect(),o=window.getComputedStyle(i),n={left:parseFloat(o.paddingLeft),top:parseFloat(o.paddingTop)},a=t-s.left-n.left,l=e-s.top-n.top;return {x:a,y:l}}installInteractions(t){t.addEventListener("mousedown",e=>{e.button===0&&(this.isPanning=true,this.panStart={...this.pan},this.pointerStart={x:e.clientX,y:e.clientY},this.clickMoved=false,t.classList.add("iv-grabbing"));}),window.addEventListener("mousemove",e=>{if(!this.isPanning)return;let i=e.clientX-this.pointerStart.x,s=e.clientY-this.pointerStart.y;this.pan={x:this.panStart.x+i,y:this.panStart.y+s},(Math.abs(i)>3||Math.abs(s)>3)&&(this.clickMoved=true),this.applyTransform();}),window.addEventListener("mouseup",()=>{this.isPanning=false,t.classList.remove("iv-grabbing");}),t.addEventListener("touchstart",e=>{if(e.touches.length===1)this.isPanning=true,this.panStart={...this.pan},this.pointerStart={x:e.touches[0].clientX,y:e.touches[0].clientY},t.classList.add("iv-grabbing");else if(e.touches.length===2){this.isPanning=false,this.multiTouchDist=this.distance(e.touches[0],e.touches[1]);let i=this.midpoint(e.touches[0],e.touches[1]);this.origin=this.calculateZoomOrigin(i.x,i.y),e.preventDefault();}},{passive:false}),t.addEventListener("touchmove",e=>{if(e.touches.length===1&&this.isPanning){let i=e.touches[0].clientX-this.pointerStart.x,s=e.touches[0].clientY-this.pointerStart.y;this.pan={x:this.panStart.x+i,y:this.panStart.y+s},this.applyTransform();}else if(e.touches.length===2){let i=this.distance(e.touches[0],e.touches[1]),s=i/this.multiTouchDist;this.adjustZoomRaw(this.zoom*s,this.origin),this.multiTouchDist=i;}},{passive:true}),t.addEventListener("touchend",()=>{this.isPanning=false,t.classList.remove("iv-grabbing");},{passive:true});}distance(t,e){return Math.hypot(t.clientX-e.clientX,t.clientY-e.clientY)}midpoint(t,e){return {x:(t.clientX+e.clientX)/2,y:(t.clientY+e.clientY)/2}}adjustZoom(t,e){this.adjustZoomRaw(this.zoom*t,e);}adjustZoomRaw(t,e){t=Math.min(this.options.maxZoom,Math.max(this.options.minZoom,t));let i=this.zoom;if(this.zoom=t,e&&this.imgEl){let s=this.imgEl.parentElement,o=this.pan,n=this.zoom/i;if(n!==1){let a=s.clientWidth*.5+o.x,l=s.clientHeight*.5+o.y,r=e.x-a,c=e.y-l,h=1-n;this.pan={x:o.x+r*h,y:o.y+c*h};}}this.applyTransform();}rotate(t){this.rotation=this.rotation+t,this.applyTransform();}resetTransform(t=false){this.zoom=1,this.pan={x:0,y:0},t&&(this.rotation=0),this.applyTransform();}applyTransform(){if(!this.imgEl)return;let{x:t,y:e,z:i,r:s}={x:this.pan.x,y:this.pan.y,z:this.zoom,r:this.rotation};this.imgEl.style.transform=`translate(${t}px, ${e}px) scale(${i}) rotate(${s}deg)`,this.updateZoomIndicator();}go(t){t<0||t>=this.images.length||(this.index=t,this.render());}open(t=0){var a,l;if(!this.images.length||(this.index=Math.min(Math.max(0,t),this.images.length-1),this.backdrop))return;document.body.classList.add("iv-lock");let e=document.createElement("div");e.innerHTML=m.trim();let i=e.firstElementChild;if(!i)return;this.options.className&&i.classList.add(...this.options.className.split(/\s+/).filter(Boolean));let s=i.querySelector(".iv-stage"),o=i.querySelector(".iv-viewbox img"),n=i.querySelector(".iv-thumbs");!s||!o||(this.options.thumbnails?n&&(n.replaceChildren(),this.images.forEach((r,c)=>{let h=p("img",{src:r.src,alt:r.alt||"",loading:"lazy"});h.addEventListener("click",()=>this.go(c)),n.appendChild(h);}),this.thumbsEl=n):(n==null||n.remove(),this.thumbsEl=void 0),this.options.closeOnBackdrop&&i.addEventListener("mousedown",r=>{r.target===i&&this.close();}),s.addEventListener("click",r=>{r.target===s&&this.close();}),o.addEventListener("click",()=>{this.clickMoved||this.close();}),i.querySelectorAll("[data-action]").forEach(r=>{r.addEventListener("click",c=>{switch(c.stopPropagation(),r.dataset.action){case "prev":this.prev();break;case "next":this.next();break;case "zoom-in":this.adjustZoom(1.25);break;case "zoom-out":this.adjustZoom(.8);break;case "rotate-left":this.rotate(-90);break;case "rotate-right":this.rotate(90);break;case "reset":this.resetTransform(true);break}});}),document.body.appendChild(i),requestAnimationFrame(()=>i.classList.add("iv-active")),this.backdrop=i,this.imgEl=o,this.installInteractions(s),this.options.keyboard&&this.installKeyboard(),this.options.wheelZoom&&this.installWheel(s),this.render(),(l=(a=this.options).onOpen)==null||l.call(a));}next(){this.go(this.index+1);}prev(){this.go(this.index-1);}close(){if(!this.backdrop)return;let t=this.backdrop;t.classList.remove("iv-active"),t.classList.add("iv-leave");let e=()=>{var i,s;t.removeEventListener("transitionend",e),t.remove(),this.backdrop=void 0,this.imgEl=void 0,document.body.classList.remove("iv-lock"),(s=(i=this.options).onClose)==null||s.call(i);};t.addEventListener("transitionend",e),this.disposes.forEach(i=>i()),this.disposes=[];}destroy(){this.close();}};function k(d){return new u(d)}export{u as ImageViewer,k as createImageViewer};//# sourceMappingURL=viewer.js.map
 //# sourceMappingURL=viewer.js.map

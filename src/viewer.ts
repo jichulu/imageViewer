@@ -1,4 +1,3 @@
-// ImageViewer: modal image viewer (thumbnails / zoom / pan / keyboard navigation)
 
 export interface ImageItem {
     src: string;
@@ -49,10 +48,9 @@ const DEFAULTS: Required<Omit<ViewerOptions, 'onOpen' | 'onClose' | 'images' | '
     maxZoom: 8
 };
 
-function createEl<K extends keyof HTMLElementTagNameMap>(
-    tag: K,
-    props?: Omit<Partial<HTMLElementTagNameMap[K]>, 'style'> & { style?: string }
-): HTMLElementTagNameMap[K] {
+import backdropTemplate from './backdrop.html';
+
+function createEl<K extends keyof HTMLElementTagNameMap>(tag: K, props?: Omit<Partial<HTMLElementTagNameMap[K]>, 'style'> & { style?: string }): HTMLElementTagNameMap[K] {
     const el = document.createElement(tag);
     if (props) {
         const { style, ...rest } = props;
@@ -164,80 +162,7 @@ export class ImageViewer {
         }
     }
 
-    private sideBtn(fn: () => void, side: 'left' | 'right') {
-        const b = createEl('button', {
-            type: 'button',
-            className: `iv-nav-btn iv-nav-btn-${side}`,
-            title: side === 'left' ? 'Previous image' : 'Next image',
-            ariaLabel: side === 'left' ? 'Previous image' : 'Next image'
-        });
-        b.appendChild(this.icon(side === 'left' ? 'arrow-left' : 'arrow-right'));
-        b.addEventListener('click', e => { e.stopPropagation(); fn(); });
-        return b;
-    }
-
-    private ctrlBtn(iconName: string, title: string, fn: () => void) {
-        const b = createEl('button', { type: 'button', title, ariaLabel: title, className: 'iv-ctrl-btn' });
-        b.appendChild(this.icon(iconName));
-        b.addEventListener('click', e => { e.stopPropagation(); fn(); });
-        return b;
-    }
-
-    // Create an inline SVG icon (stroke based, 24x24 viewBox)
-    private icon(name: string) {
-        const svgNS = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(svgNS, 'svg');
-        svg.setAttribute('viewBox', '0 0 24 24');
-        svg.setAttribute('aria-hidden', 'true');
-        svg.classList.add('iv-icon');
-        const path = (d: string, extra: Partial<Record<string, string>> = {}) => {
-            const p = document.createElementNS(svgNS, 'path');
-            p.setAttribute('d', d);
-            Object.entries(extra).forEach(([k, v]) => { if (typeof v === 'string') p.setAttribute(k, v); });
-            return p;
-        };
-        switch (name) {
-            case 'arrow-left':
-                svg.append(path('M15 4l-8 8 8 8', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-                break;
-            case 'arrow-right':
-                svg.append(path('M9 4l8 8-8 8', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-                break;
-            case 'zoom-in':
-                svg.append(path('M11 17a6 6 0 100-12 6 6 0 000 12z')); // circle
-                svg.append(path('M11 9v4M9 11h4', { 'stroke-linecap': 'round' }));
-                svg.append(path('M16.5 16.5L21 21', { 'stroke-linecap': 'round' }));
-                break;
-            case 'zoom-out':
-                svg.append(path('M11 17a6 6 0 100-12 6 6 0 000 12z'));
-                svg.append(path('M9 11h4', { 'stroke-linecap': 'round' }));
-                svg.append(path('M16.5 16.5L21 21', { 'stroke-linecap': 'round' }));
-                break;
-            case 'rotate-left':
-                svg.append(path('M8 4v4h4')); // corner arrow
-                svg.append(path('M8 8a6 6 0 016-6 6 6 0 010 12 3 3 0 00-3 3v3', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-                break;
-            case 'rotate-right':
-                svg.append(path('M16 4v4h-4'));
-                svg.append(path('M16 8a6 6 0 00-6-6 6 6 0 000 12 3 3 0 013 3v3', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-                break;
-            case 'reset':
-                svg.append(path('M12 3v3')); // crosshair
-                svg.append(path('M12 18v3'));
-                svg.append(path('M3 12h3'));
-                svg.append(path('M18 12h3'));
-                svg.append(path('M12 8a4 4 0 100 8 4 4 0 000-8z'));
-                break;
-            default:
-                svg.append(path('M4 4h16v16H4z')); // fallback square
-        }
-        svg.querySelectorAll('path').forEach(p => {
-            if (!p.getAttribute('fill')) p.setAttribute('fill', 'none');
-            p.setAttribute('stroke', 'currentColor');
-            p.setAttribute('stroke-width', '2');
-        });
-        return svg;
-    }
+    // SVG icons & buttons now provided via static HTML template (backdrop.html)
 
     private render() {
         if (!this.imgEl) return;
@@ -423,59 +348,54 @@ export class ImageViewer {
         if (this.backdrop) return;
 
         document.body.classList.add('iv-lock');
-        const backdrop = createEl('div', { className: `iv-backdrop ${this.options.className}`.trim() });
-        if (this.options.closeOnBackdrop) {
-            backdrop.addEventListener('mousedown', e => {
-                if (e.target === backdrop) this.close();
-            });
-        }
-        const shell = createEl('div', { className: 'iv-shell' });
-        const stage = createEl('div', { className: 'iv-stage' });
-        const viewBox = createEl('div', { className: 'iv-viewbox' });
-        const tools = createEl('div', { className: 'iv-tools' });
-        const imgEl = createEl('img', { draggable: false });
-        viewBox.appendChild(imgEl);
-        stage.appendChild(viewBox);
-        stage.appendChild(tools);
-
-        // Click blank stage area to close
-        stage.addEventListener('click', e => { if (e.target === stage) this.close(); });
-        // Single click on image closes if not dragged
-        imgEl.addEventListener('click', () => { if (!this.clickMoved) this.close(); });
-
-        const zoomIndicator = createEl('div', { className: 'iv-zoom-indicator' });
-        const counter = createEl('div', { className: 'iv-counter' });
-        tools.appendChild(zoomIndicator);
-        tools.appendChild(counter);
-
-        // Side navigation buttons
-        tools.appendChild(this.sideBtn(() => this.prev(), 'left'));
-        tools.appendChild(this.sideBtn(() => this.next(), 'right'));
-
-        // Control buttons (zoom / rotate / reset)
-        const controls = createEl('div', { className: 'iv-controls' });
-        controls.append(
-            this.ctrlBtn('zoom-in', 'Zoom In', () => this.adjustZoom(1.25)),
-            this.ctrlBtn('zoom-out', 'Zoom Out', () => this.adjustZoom(0.8)),
-            this.ctrlBtn('rotate-left', 'Rotate Left', () => this.rotate(-90)),
-            this.ctrlBtn('rotate-right', 'Rotate Right', () => this.rotate(90)),
-            this.ctrlBtn('reset', 'Reset', () => this.resetTransform(true)),
-        );
-        tools.appendChild(controls);
-
-        shell.appendChild(stage);
+        // Build from template
+        const wrap = document.createElement('div');
+        wrap.innerHTML = backdropTemplate.trim();
+        const backdrop = wrap.firstElementChild as HTMLElement | null;
+        if (!backdrop) return;
+        if (this.options.className) backdrop.classList.add(...this.options.className.split(/\s+/).filter(Boolean));
+        const stage = backdrop.querySelector<HTMLElement>('.iv-stage');
+        const imgEl = backdrop.querySelector<HTMLImageElement>('.iv-viewbox img');
+        let thumbs = backdrop.querySelector<HTMLElement>('.iv-thumbs');
+        if (!stage || !imgEl) return;
+        // thumbnails handling
         if (this.options.thumbnails) {
-            const thumbs = createEl('div', { className: 'iv-thumbs' });
-            this.images.forEach((it, i) => {
-                const t = createEl('img', { src: it.src, alt: it.alt || '', loading: 'lazy' });
-                t.addEventListener('click', () => this.go(i));
-                thumbs.appendChild(t);
-            });
-            shell.appendChild(thumbs); this.thumbsEl = thumbs;
+            if (thumbs) {
+                thumbs.replaceChildren();
+                this.images.forEach((it, i) => {
+                    const t = createEl('img', { src: it.src, alt: it.alt || '', loading: 'lazy' });
+                    t.addEventListener('click', () => this.go(i));
+                    thumbs.appendChild(t);
+                });
+                this.thumbsEl = thumbs;
+            }
+        } else {
+            thumbs?.remove();
+            this.thumbsEl = undefined;
         }
-
-        backdrop.appendChild(shell);
-
+        // backdrop close
+        if (this.options.closeOnBackdrop) {
+            backdrop.addEventListener('mousedown', e => { if (e.target === backdrop) this.close(); });
+        }
+        // stage blank click close
+        stage.addEventListener('click', e => { if (e.target === stage) this.close(); });
+        // image click close
+        imgEl.addEventListener('click', () => { if (!this.clickMoved) this.close(); });
+        // delegate buttons
+        backdrop.querySelectorAll<HTMLElement>('[data-action]').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                switch (btn.dataset.action) {
+                    case 'prev': this.prev(); break;
+                    case 'next': this.next(); break;
+                    case 'zoom-in': this.adjustZoom(1.25); break;
+                    case 'zoom-out': this.adjustZoom(0.8); break;
+                    case 'rotate-left': this.rotate(-90); break;
+                    case 'rotate-right': this.rotate(90); break;
+                    case 'reset': this.resetTransform(true); break;
+                }
+            });
+        });
         document.body.appendChild(backdrop);
         requestAnimationFrame(() => backdrop.classList.add('iv-active'));
         this.backdrop = backdrop; this.imgEl = imgEl;

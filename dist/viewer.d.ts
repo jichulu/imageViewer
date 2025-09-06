@@ -1,9 +1,9 @@
-export interface ImageItem {
+interface ImageItem {
     src: string;
     alt?: string;
     title?: string;
 }
-export interface ViewerOptions {
+interface ViewerOptions {
     /** CSS selector or element that bounds the DOM scan */
     scope?: string | HTMLElement;
     /** Show thumbnail strip */
@@ -25,7 +25,7 @@ export interface ViewerOptions {
     minZoom?: number;
     maxZoom?: number;
 }
-export declare class ImageViewer {
+declare class ImageViewer {
     private options;
     private images;
     private index;
@@ -47,9 +47,6 @@ export declare class ImageViewer {
     private observeNewImages;
     private tryAddImage;
     private tryRemoveImage;
-    private sideBtn;
-    private ctrlBtn;
-    private icon;
     private render;
     private highlightThumb;
     private updateCounter;
@@ -72,4 +69,6 @@ export declare class ImageViewer {
     close(): void;
     destroy(): void;
 }
-export declare function createImageViewer(options?: ViewerOptions): ImageViewer;
+declare function createImageViewer(options?: ViewerOptions): ImageViewer;
+
+export { type ImageItem, ImageViewer, type ViewerOptions, createImageViewer };

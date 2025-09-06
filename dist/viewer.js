@@ -257,7 +257,7 @@ export class ImageViewer {
         if (counter)
             counter.textContent = `${this.index + 1} / ${this.images.length}`;
         this.highlightThumb();
-        this.resetTransform();
+        this.resetTransform(true);
         this.updateZoomIndicator(zoomIndicator);
     }
     highlightThumb() {

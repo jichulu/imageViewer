@@ -64,6 +64,43 @@ createImageViewer({
 </script>
 ```
 
+## IIFE (Global) Usage (no modules / legacy script tag)
+Use the pre-bundled IIFE build which exposes a global `ImageViewer` object containing both the class and the factory function.
+
+```html
+<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/image-viewer.css" />
+<article id="gallery">
+  <img src="/demo/1.jpg" alt="One" />
+  <img src="/demo/2.jpg" alt="Two" />
+</article>
+
+<!-- Load AFTER the images / or place before </body> -->
+<script src="https://unpkg.com/lite-image-viewer/dist/viewer.global.js"></script>
+<script>
+  // Option 1: use factory
+  ImageViewer.createImageViewer({ scope: '#gallery' });
+
+  // Option 2: instantiate class directly
+  // const viewer = new ImageViewer.ImageViewer({ scope: '#gallery' });
+  // viewer.open();
+</script>
+```
+
+Notes:
+- Global name: `ImageViewer`
+- Exports: `ImageViewer.ImageViewer` (class) and `ImageViewer.createImageViewer` (factory)
+- Include the CSS file separately (not inlined)
+- Call after DOM is ready (e.g. `DOMContentLoaded`) if script is in `<head>`
+
+### Minimal inline example
+```html
+<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/image-viewer.css" />
+<img src="/demo/1.jpg" />
+<img src="/demo/2.jpg" />
+<script src="https://unpkg.com/lite-image-viewer/dist/viewer.global.js"></script>
+<script>ImageViewer.createImageViewer();</script>
+```
+
 ## Local Dev (clone repo)
 ```powershell
 npm install

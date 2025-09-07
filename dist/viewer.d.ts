@@ -26,6 +26,7 @@ interface ViewerOptions {
     maxZoom?: number;
 }
 declare class ImageViewer {
+    #private;
     private options;
     private images;
     private index;

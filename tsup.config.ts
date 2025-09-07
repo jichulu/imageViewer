@@ -1,9 +1,10 @@
 import { defineConfig } from 'tsup';
-import { htmlMinify } from './tsup-html-plugin';
+import { htmlMinify } from './tsup.plugin';
 
 export default defineConfig({
   entry: ['src/viewer.ts'],
-  format: ['esm'],
+  format: ['esm', 'iife'],
+  globalName: 'ImageViewer',
   dts: true,
   sourcemap: true,
   clean: true,

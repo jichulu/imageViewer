@@ -50,16 +50,6 @@ const DEFAULTS: Required<Omit<ViewerOptions, 'onOpen' | 'onClose' | 'images' | '
 
 import backdropTemplate from './backdrop.html';
 
-function createEl<K extends keyof HTMLElementTagNameMap>(tag: K, props?: Omit<Partial<HTMLElementTagNameMap[K]>, 'style'> & { style?: string }): HTMLElementTagNameMap[K] {
-    const el = document.createElement(tag);
-    if (props) {
-        const { style, ...rest } = props;
-        Object.assign(el, rest);
-        if (style) (el as HTMLElement).style.cssText = style;
-    }
-    return el;
-}
-
 export class ImageViewer {
     private options: typeof DEFAULTS;
     private images: ImageItem[] = [];
@@ -83,6 +73,16 @@ export class ImageViewer {
         this.options = { ...DEFAULTS, ...opts, scope };
         this.collect();
         this.observeNewImages();
+    }
+
+    #createEl = function <K extends keyof HTMLElementTagNameMap>(tag: K, props?: Omit<Partial<HTMLElementTagNameMap[K]>, 'style'> & { style?: string }): HTMLElementTagNameMap[K] {
+        const el = document.createElement(tag);
+        if (props) {
+            const { style, ...rest } = props;
+            Object.assign(el, rest);
+            if (style) (el as HTMLElement).style.cssText = style;
+        }
+        return el;
     }
 
     // Collect images from DOM
@@ -145,7 +145,7 @@ export class ImageViewer {
             if (idx >= 0) this.open(idx);
         });
         if (this.backdrop && this.thumbsEl) {
-            const t = createEl('img', { src: item.src, alt: item.alt || '', loading: 'lazy' });
+            const t = this.#createEl('img', { src: item.src, alt: item.alt || '', loading: 'lazy' });
             t.addEventListener('click', () => {
                 const idx = this.images.findIndex(i => i.src === src);
                 if (idx >= 0) this.go(idx);
@@ -351,7 +351,7 @@ export class ImageViewer {
         this.render();
     }
 
-    open(startIndex = 0) {
+    public open(startIndex = 0) {
         if (!this.images.length) return;
         this.index = Math.min(Math.max(0, startIndex), this.images.length - 1);
         if (this.backdrop) return;
@@ -372,7 +372,7 @@ export class ImageViewer {
             if (thumbs) {
                 thumbs.replaceChildren();
                 this.images.forEach((it, i) => {
-                    const t = createEl('img', { src: it.src, alt: it.alt || '', loading: 'lazy' });
+                    const t = this.#createEl('img', { src: it.src, alt: it.alt || '', loading: 'lazy' });
                     t.addEventListener('click', () => this.go(i));
                     thumbs.appendChild(t);
                 });
@@ -387,9 +387,7 @@ export class ImageViewer {
             backdrop.addEventListener('mousedown', e => { if (e.target === backdrop) this.close(); });
         }
         // stage blank click close
-        stage.addEventListener('click', e => { if (e.target === stage) this.close(); });
-        // image click close
-        imgEl.addEventListener('click', () => { if (!this.clickMoved) this.close(); });
+        stage.addEventListener('click', e => { if (!this.clickMoved) this.close(); });
         // delegate buttons
         backdrop.querySelectorAll<HTMLElement>('[data-action]').forEach(btn => {
             btn.addEventListener('click', e => {
@@ -407,7 +405,8 @@ export class ImageViewer {
         });
         document.body.appendChild(backdrop);
         requestAnimationFrame(() => backdrop.classList.add('iv-active'));
-        this.backdrop = backdrop; this.imgEl = imgEl;
+        this.backdrop = backdrop;
+        this.imgEl = imgEl;
 
         this.installInteractions(stage);
         if (this.options.keyboard) this.installKeyboard();
@@ -416,11 +415,11 @@ export class ImageViewer {
         this.options.onOpen?.();
     }
 
-    next() { this.go(this.index + 1); }
+    public next() { this.go(this.index + 1); }
 
-    prev() { this.go(this.index - 1); }
+    public prev() { this.go(this.index - 1); }
 
-    close() {
+    public close() {
         if (!this.backdrop) return;
         // Play closing animation
         const bd = this.backdrop;
@@ -438,7 +437,7 @@ export class ImageViewer {
         this.disposes.forEach(item => item[1] && item[0]());
     }
 
-    destroy() {
+    public destroy() {
         this.close();
         // Clean up event listeners
         this.disposes.forEach(item => item[0]());

@@ -11,8 +11,6 @@ interface ViewerOptions {
     scope?: string | HTMLElement;
     /** Show thumbnail strip Default true */
     thumbnails?: boolean;
-    /** Close when clicking backdrop (default true) */
-    closeOnBackdrop?: boolean;
     /** Enable keyboard navigation (Escape, Arrows, +/-, 0) default true */
     keyboard?: boolean;
     /** Enable wheel zoom (no Ctrl/⌘ needed) default true */

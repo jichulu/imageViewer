@@ -84,7 +84,7 @@ Use the pre-bundled IIFE build which exposes a global `ImageViewer` object conta
 
 Notes:
 - Global name: `ImageViewer`
-- Exports: `ImageViewer.ImageViewer` (class) and `ImageViewer.createImageViewer` (factory)
+- Exports: `ImageViewer.createImageViewer` (factory)
 - Include the CSS file separately (not inlined)
 - Call after DOM is ready (e.g. `DOMContentLoaded`) if script is in `<head>`
 
@@ -111,7 +111,6 @@ createImageViewer(options?: ViewerOptions): ImageViewer
 interface ViewerOptions {
   scope?: string | HTMLElement; // DOM scan scope
   thumbnails?: boolean;         // Show thumbnail strip
-  closeOnBackdrop?: boolean;    // Click backdrop to close
   keyboard?: boolean;           // Enable keyboard navigation
   wheelZoom?: boolean;          // Enable direct wheel zoom
   className?: string;           // Extra class on root

@@ -1,9 +1,10 @@
-import { defineConfig } from 'tsup';
+import { defineConfig, Options } from 'tsup';
 import { sassPlugin } from 'esbuild-sass-plugin';
 import { htmlMinify } from './tsup.plugin';
 
-export default defineConfig({
+const options: Options = {
   entry: ['src/viewer.ts'],
+  platform: 'browser',
   format: ['esm', 'iife'],
   globalName: 'ImageViewer',
   dts: true,
@@ -18,5 +19,15 @@ export default defineConfig({
     '.scss': 'file'
   },
   skipNodeModulesBundle: true,
-  esbuildPlugins: [sassPlugin(), htmlMinify()]
-});
+  esbuildPlugins: [htmlMinify()]
+};
+
+
+const scssOptions: Options = {
+  entry: ['src/*.scss'],
+  sourcemap: false,
+  outDir: 'dist',
+  minify: true,
+  esbuildPlugins: [sassPlugin()]
+};
+export default defineConfig([options, scssOptions]);

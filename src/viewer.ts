@@ -1,4 +1,3 @@
-import './viewer.scss';
 import backdropTemplate from './viewer.html';
 import { createEl } from './utils/domUtils'
 import { ImageItem, ViewerInstance, ViewerOptions } from './interface';
@@ -11,7 +10,6 @@ const DEFAULTS: Required<Omit<ViewerOptions, 'onOpen' | 'onClose' | 'images' | '
 } = {
     scope: null,
     thumbnails: true,
-    closeOnBackdrop: true,
     keyboard: true,
     wheelZoom: true,
     className: '',
@@ -85,21 +83,13 @@ class ImageViewer implements ViewerInstance {
     }
 
     private tryAddImage(img: HTMLImageElement) {
-        if (img.dataset.noViewer === 'true' || img.dataset.ivBound === '1') {
-            console.log('skip', img);
-            return;
-        }
-        if (this.options.filter && !this.options.filter(img)) {
-            console.log('filtered', img);
-            return;
-        }
-        if (!img.src) {
-            console.log('no src', img);
-            return;
-        }
+        if (img.dataset.noViewer === 'true' || img.dataset.ivBound === '1') return;
+        if (this.options.filter && !this.options.filter(img)) return;
+        if (!img.src) return;
         const src = img.currentSrc || img.src;
         const item: ImageItem = { src, alt: img.alt, title: img.title || img.alt };
         this.images.push(item);
+        img.dataset.cursor = img.style.cursor;
         img.style.cursor = 'zoom-in';
         img.dataset.ivBound = '1';
         img.addEventListener('click', e => {
@@ -123,8 +113,9 @@ class ImageViewer implements ViewerInstance {
         const src = img.currentSrc || img.src;
         const idx = this.images.findIndex(i => i.src === src);
         if (idx >= 0) this.images.splice(idx, 1);
+        img.style.cursor = img.dataset.cursor || '';
+        delete img.dataset.cursor;
         delete img.dataset.ivBound;
-        img.style.cursor = '';
         img.removeEventListener('click', () => { });
         if (this.backdrop && this.thumbsEl) {
             const thumbs = Array.from(this.thumbsEl.querySelectorAll('img'));
@@ -133,8 +124,6 @@ class ImageViewer implements ViewerInstance {
             this.updateCounter();
         }
     }
-
-    // SVG icons & buttons now provided via static HTML template (backdrop.html)
 
     private render() {
         if (!this.imgEl) return;
@@ -328,7 +317,7 @@ class ImageViewer implements ViewerInstance {
         if (this.options.className) backdrop.classList.add(...this.options.className.split(/\s+/).filter(Boolean));
         const stage = backdrop.querySelector<HTMLElement>('.iv-stage');
         const imgEl = backdrop.querySelector<HTMLImageElement>('.iv-stage img');
-        let thumbs = backdrop.querySelector<HTMLElement>('.iv-thumbs');
+        const thumbs = backdrop.querySelector<HTMLElement>('.iv-thumbs');
         if (!stage || !imgEl) return;
         // thumbnails handling
         if (this.options.thumbnails) {
@@ -344,10 +333,6 @@ class ImageViewer implements ViewerInstance {
         } else {
             thumbs?.remove();
             this.thumbsEl = undefined;
-        }
-        // backdrop close
-        if (this.options.closeOnBackdrop) {
-            backdrop.addEventListener('mousedown', e => { if (e.target === backdrop) this.close(); });
         }
         // stage blank click close
         stage.addEventListener('click', e => { if (!this.clickMoved) this.close(); });

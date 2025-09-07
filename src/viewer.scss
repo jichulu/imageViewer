@@ -24,6 +24,7 @@
   padding: clamp(8px, 2vw, 40px);
   opacity: 0;
   transition: opacity .5s ease;
+  user-select: none;
 
   &.iv-active {
     opacity: 1;

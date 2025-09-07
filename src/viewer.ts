@@ -1,34 +1,7 @@
 import './viewer.scss';
 import backdropTemplate from './viewer.html';
-
-export interface ImageItem {
-    src: string;
-    alt?: string;
-    title?: string;
-}
-
-export interface ViewerOptions {
-    /** CSS selector or element that bounds the DOM scan */
-    scope?: string | HTMLElement;
-    /** Show thumbnail strip */
-    thumbnails?: boolean;
-    /** Close when clicking backdrop */
-    closeOnBackdrop?: boolean;
-    /** Enable keyboard navigation */
-    keyboard?: boolean;
-    /** Enable wheel zoom (no Ctrl/⌘ needed) */
-    wheelZoom?: boolean;
-    /** Extra class names for root element */
-    className?: string;
-    onOpen?: () => void;
-    onClose?: () => void;
-    /** Provide images directly; skip DOM scan if set */
-    images?: ImageItem[];
-    /** Filter function: return true to include an <img> */
-    filter?: (img: HTMLImageElement) => boolean;
-    minZoom?: number; // default 0.25
-    maxZoom?: number; // default 8
-}
+import { createEl } from './utils/domUtils'
+import { ImageItem, ViewerInstance, ViewerOptions } from './interface';
 
 const DEFAULTS: Required<Omit<ViewerOptions, 'onOpen' | 'onClose' | 'images' | 'scope'>> & {
     scope: HTMLElement | null;
@@ -50,7 +23,7 @@ const DEFAULTS: Required<Omit<ViewerOptions, 'onOpen' | 'onClose' | 'images' | '
     maxZoom: 8
 };
 
-export class ImageViewer {
+class ImageViewer implements ViewerInstance {
     private options: typeof DEFAULTS;
     private images: ImageItem[] = [];
     private index = 0;
@@ -73,16 +46,6 @@ export class ImageViewer {
         this.options = { ...DEFAULTS, ...opts, scope };
         this.collect();
         this.observeNewImages();
-    }
-
-    #createEl = function <K extends keyof HTMLElementTagNameMap>(tag: K, props?: Omit<Partial<HTMLElementTagNameMap[K]>, 'style'> & { style?: string }): HTMLElementTagNameMap[K] {
-        const el = document.createElement(tag);
-        if (props) {
-            const { style, ...rest } = props;
-            Object.assign(el, rest);
-            if (style) (el as HTMLElement).style.cssText = style;
-        }
-        return el;
     }
 
     // Collect images from DOM
@@ -145,7 +108,7 @@ export class ImageViewer {
             if (idx >= 0) this.open(idx);
         });
         if (this.backdrop && this.thumbsEl) {
-            const t = this.#createEl('img', { src: item.src, alt: item.alt || '', loading: 'lazy' });
+            const t = createEl('img', { src: item.src, alt: item.alt || '', loading: 'lazy' });
             t.addEventListener('click', () => {
                 const idx = this.images.findIndex(i => i.src === src);
                 if (idx >= 0) this.go(idx);
@@ -372,7 +335,7 @@ export class ImageViewer {
             if (thumbs) {
                 thumbs.replaceChildren();
                 this.images.forEach((it, i) => {
-                    const t = this.#createEl('img', { src: it.src, alt: it.alt || '', loading: 'lazy' });
+                    const t = createEl('img', { src: it.src, alt: it.alt || '', loading: 'lazy' });
                     t.addEventListener('click', () => this.go(i));
                     thumbs.appendChild(t);
                 });
@@ -445,5 +408,7 @@ export class ImageViewer {
     }
 }
 
-// Factory function
-export function createImageViewer(options?: ViewerOptions) { return new ImageViewer(options); }
+/** Factory function, returns a singleton instance */
+function createImageViewer(options?: ViewerOptions): ViewerInstance { return new ImageViewer(options); }
+
+export { createImageViewer, ImageItem, ViewerOptions, ViewerInstance };

@@ -79,10 +79,6 @@ Use the pre-bundled IIFE build which exposes a global `ImageViewer` object conta
 <script>
   // Option 1: use factory
   ImageViewer.createImageViewer({ scope: '#gallery' });
-
-  // Option 2: instantiate class directly
-  // const viewer = new ImageViewer.ImageViewer({ scope: '#gallery' });
-  // viewer.open();
 </script>
 ```
 

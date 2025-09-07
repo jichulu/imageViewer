@@ -1,4 +1,5 @@
-interface ImageItem {
+
+export interface ImageItem {
     /** Image source URL */
     src: string;
     /** alt text */
@@ -6,7 +7,8 @@ interface ImageItem {
     /** title text */
     title?: string;
 }
-interface ViewerOptions {
+
+export interface ViewerOptions {
     /** CSS selector or element that bounds the DOM scan */
     scope?: string | HTMLElement;
     /** Show thumbnail strip Default true */
@@ -32,7 +34,8 @@ interface ViewerOptions {
     /** Maximum zoom level (e.g. 2 = 200%) default 8 */
     maxZoom?: number;
 }
-interface ViewerInstance {
+
+export interface ViewerInstance {
     /** Open viewer at given image index (default 0) */
     open(startIndex?: number): void;
     /** Close viewer */
@@ -44,8 +47,3 @@ interface ViewerInstance {
     /** Destroy instance and clean up event listeners */
     destroy(): void;
 }
-
-/** Factory function, returns a singleton instance */
-declare function createImageViewer(options?: ViewerOptions): ViewerInstance;
-
-export { type ImageItem, type ViewerInstance, type ViewerOptions, createImageViewer };

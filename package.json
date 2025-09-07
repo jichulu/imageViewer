@@ -1,6 +1,6 @@
 {
-  "name": "lite-image-viewer",
-  "version": "2.0.3",
+  "name": "@jichu/image-viewer",
+  "version": "1.0.0",
   "author": "jichulu",
   "repository": {
     "type": "git",

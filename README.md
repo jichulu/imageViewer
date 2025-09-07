@@ -3,8 +3,8 @@
 A lightweight, zero‑dependency TypeScript image viewer: modal overlay, zoom, drag/pan, thumbnails, rotation, keyboard navigation.
 
 <p>
-  <a href="https://www.npmjs.com/package/@jichu/image-viewer"><img src="https://img.shields.io/npm/v/@jichu/image-viewer.svg?style=flat&color=33a" alt="npm version" /></a>
-  <a href="https://www.npmjs.com/package/@jichu/image-viewer"><img src="https://img.shields.io/npm/dm/@jichu/image-viewer.svg?color=4a7" alt="downloads" /></a>
+  <a href="https://www.npmjs.com/package/@lujichu/image-viewer"><img src="https://img.shields.io/npm/v/@lujichu/image-viewer.svg?style=flat&color=33a" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@lujichu/image-viewer"><img src="https://img.shields.io/npm/dm/@lujichu/image-viewer.svg?color=4a7" alt="downloads" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="license" /></a>
 </p>
 
@@ -25,17 +25,17 @@ https://jichulu.github.io/imageViewer/
 
 ## Install
 ```bash
-npm i @jichu/image-viewer
+npm i @lujichu/image-viewer
 # or
-pnpm add @jichu/image-viewer
+pnpm add @lujichu/image-viewer
 # or
-yarn add @jichu/image-viewer
+yarn add @lujichu/image-viewer
 ```
 
 ## Basic Usage (bundler / ESM)
 ```ts
-import { createImageViewer } from '@jichu/image-viewer';
-import '@jichu/image-viewer/css/viewer.css';
+import { createImageViewer } from '@lujichu/image-viewer';
+import '@lujichu/image-viewer/css/viewer.css';
 
 createImageViewer({ scope: 'article' });
 ```
@@ -53,13 +53,13 @@ createImageViewer({
 
 ## Direct Browser (CDN / ESM) Example
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@jichu/image-viewer/dist/css/viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/@lujichu/image-viewer/dist/css/viewer.css" />
 <article>
   <img src="/demo/1.jpg" />
   <img src="/demo/2.jpg" />
 </article>
 <script type="module">
-  import { createImageViewer } from 'https://unpkg.com/@jichu/image-viewer/dist/js/viewer.js';
+  import { createImageViewer } from 'https://unpkg.com/@lujichu/image-viewer/dist/js/viewer.js';
   createImageViewer({ scope: 'article' });
 </script>
 ```
@@ -68,14 +68,14 @@ createImageViewer({
 Use the pre-bundled IIFE build which exposes a global `ImageViewer` object containing both the class and the factory function.
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@jichu/image-viewer/dist/css/viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/@lujichu/image-viewer/dist/css/viewer.css" />
 <article id="gallery">
   <img src="/demo/1.jpg" alt="One" />
   <img src="/demo/2.jpg" alt="Two" />
 </article>
 
 <!-- Load AFTER the images / or place before </body> -->
-<script src="https://unpkg.com/@jichu/image-viewer/dist/js/viewer.global.js"></script>
+<script src="https://unpkg.com/@lujichu/image-viewer/dist/js/viewer.global.js"></script>
 <script>
   // Option 1: use factory
   ImageViewer.createImageViewer({ scope: '#gallery' });
@@ -90,10 +90,10 @@ Notes:
 
 ### Minimal inline example
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@jichu/image-viewer/dist/css/viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/@lujichu/image-viewer/dist/css/viewer.css" />
 <img src="/demo/1.jpg" />
 <img src="/demo/2.jpg" />
-<script src="https://unpkg.com/@jichu/image-viewer/dist/js/viewer.global.js"></script>
+<script src="https://unpkg.com/@lujichu/image-viewer/dist/js/viewer.global.js"></script>
 <script>ImageViewer.createImageViewer();</script>
 ```
 

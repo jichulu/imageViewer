@@ -11,7 +11,7 @@ const options: Options = {
   sourcemap: true,
   clean: true,
   target: 'es2019',
-  outDir: 'dist',
+  outDir: 'dist/js',
   treeshake: true,
   minify: true,
   loader: {
@@ -26,7 +26,8 @@ const options: Options = {
 const scssOptions: Options = {
   entry: ['src/*.scss'],
   sourcemap: false,
-  outDir: 'dist',
+  clean: true,
+  outDir: 'dist/css',
   minify: true,
   esbuildPlugins: [sassPlugin()]
 };

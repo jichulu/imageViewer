@@ -35,7 +35,7 @@ yarn add lite-image-viewer
 ## Basic Usage (bundler / ESM)
 ```ts
 import { createImageViewer } from 'lite-image-viewer';
-import 'lite-image-viewer/viewer.css';
+import 'lite-image-viewer/css/viewer.css';
 
 createImageViewer({ scope: 'article' });
 ```
@@ -53,13 +53,13 @@ createImageViewer({
 
 ## Direct Browser (CDN / ESM) Example
 ```html
-<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/css/viewer.css" />
 <article>
   <img src="/demo/1.jpg" />
   <img src="/demo/2.jpg" />
 </article>
 <script type="module">
-  import { createImageViewer } from 'https://unpkg.com/lite-image-viewer/dist/viewer.js';
+  import { createImageViewer } from 'https://unpkg.com/lite-image-viewer/dist/js/viewer.js';
   createImageViewer({ scope: 'article' });
 </script>
 ```
@@ -68,14 +68,14 @@ createImageViewer({
 Use the pre-bundled IIFE build which exposes a global `ImageViewer` object containing both the class and the factory function.
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/css/viewer.css" />
 <article id="gallery">
   <img src="/demo/1.jpg" alt="One" />
   <img src="/demo/2.jpg" alt="Two" />
 </article>
 
 <!-- Load AFTER the images / or place before </body> -->
-<script src="https://unpkg.com/lite-image-viewer/dist/viewer.global.js"></script>
+<script src="https://unpkg.com/lite-image-viewer/dist/js/viewer.global.js"></script>
 <script>
   // Option 1: use factory
   ImageViewer.createImageViewer({ scope: '#gallery' });
@@ -90,10 +90,10 @@ Notes:
 
 ### Minimal inline example
 ```html
-<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/css/viewer.css" />
 <img src="/demo/1.jpg" />
 <img src="/demo/2.jpg" />
-<script src="https://unpkg.com/lite-image-viewer/dist/viewer.global.js"></script>
+<script src="https://unpkg.com/lite-image-viewer/dist/js/viewer.global.js"></script>
 <script>ImageViewer.createImageViewer();</script>
 ```
 

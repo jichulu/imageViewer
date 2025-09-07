@@ -1,3 +1,5 @@
+import './viewer.scss';
+import backdropTemplate from './viewer.html';
 
 export interface ImageItem {
     src: string;
@@ -47,8 +49,6 @@ const DEFAULTS: Required<Omit<ViewerOptions, 'onOpen' | 'onClose' | 'images' | '
     minZoom: 0.25,
     maxZoom: 8
 };
-
-import backdropTemplate from './backdrop.html';
 
 export class ImageViewer {
     private options: typeof DEFAULTS;

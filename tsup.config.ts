@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsup';
+import { sassPlugin } from 'esbuild-sass-plugin';
 import { htmlMinify } from './tsup.plugin';
 
 export default defineConfig({
@@ -17,5 +18,5 @@ export default defineConfig({
     '.scss': 'file'
   },
   skipNodeModulesBundle: true,
-  esbuildPlugins: [htmlMinify()]
+  esbuildPlugins: [sassPlugin(), htmlMinify()]
 });

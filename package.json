@@ -26,23 +26,23 @@
   ],
   "module": "dist/viewer.js",
   "types": "dist/viewer.d.ts",
-  "style": "dist/image-viewer.css",
+  "style": "dist/viewer.css",
   "exports": {
     ".": {
       "import": "./dist/viewer.js",
       "types": "./dist/viewer.d.ts"
     },
-    "./image-viewer.css": "./dist/image-viewer.css"
+    "./viewer.css": "./dist/viewer.css"
   },
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "build": "tsup && npm run build:css",
-    "build:css": "sass src/image-viewer.scss dist/image-viewer.css --no-source-map",
+    "build": "tsup",
     "dev": "tsup --watch"
   },
   "devDependencies": {
     "@types/node": "^24.3.1",
+    "esbuild-sass-plugin": "^3.3.1",
     "html-minifier-terser": "^7.2.0",
     "sass": "^1.77.0",
     "tsup": "^8.0.0",

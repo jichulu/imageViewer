@@ -35,7 +35,7 @@ yarn add lite-image-viewer
 ## Basic Usage (bundler / ESM)
 ```ts
 import { createImageViewer } from 'lite-image-viewer';
-import 'lite-image-viewer/image-viewer.css';
+import 'lite-image-viewer/viewer.css';
 
 createImageViewer({ scope: 'article' });
 ```
@@ -53,7 +53,7 @@ createImageViewer({
 
 ## Direct Browser (CDN / ESM) Example
 ```html
-<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/image-viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/viewer.css" />
 <article>
   <img src="/demo/1.jpg" />
   <img src="/demo/2.jpg" />
@@ -68,7 +68,7 @@ createImageViewer({
 Use the pre-bundled IIFE build which exposes a global `ImageViewer` object containing both the class and the factory function.
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/image-viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/viewer.css" />
 <article id="gallery">
   <img src="/demo/1.jpg" alt="One" />
   <img src="/demo/2.jpg" alt="Two" />
@@ -94,7 +94,7 @@ Notes:
 
 ### Minimal inline example
 ```html
-<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/image-viewer.css" />
+<link rel="stylesheet" href="https://unpkg.com/lite-image-viewer/dist/viewer.css" />
 <img src="/demo/1.jpg" />
 <img src="/demo/2.jpg" />
 <script src="https://unpkg.com/lite-image-viewer/dist/viewer.global.js"></script>

@@ -1,6 +1,6 @@
 {
   "name": "lite-image-viewer",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "author": "jichulu",
   "repository": {
     "type": "git",
@@ -24,15 +24,15 @@
   "files": [
     "dist"
   ],
-  "module": "dist/viewer.js",
-  "types": "dist/viewer.d.ts",
-  "style": "dist/viewer.css",
+  "module": "dist/js/viewer.js",
+  "types": "dist/js/viewer.d.ts",
+  "style": "dist/css/viewer.css",
   "exports": {
     ".": {
-      "import": "./dist/viewer.js",
-      "types": "./dist/viewer.d.ts"
+      "import": "./dist/js/viewer.js",
+      "types": "./dist/js/viewer.d.ts"
     },
-    "./viewer.css": "./dist/viewer.css"
+    "./viewer.css": "./dist/css/viewer.css"
   },
   "sideEffects": false,
   "type": "module",

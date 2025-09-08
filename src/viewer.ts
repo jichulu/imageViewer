@@ -180,18 +180,15 @@ class ImageViewer implements ViewerInstance {
             // Derive scale factor from wheel delta, clamp extremes
             const step = Math.max(-1, Math.min(1, e.deltaY / 100));
             const factor = step < 0 ? 1 - step * 0.25 : 1 / (1 + step * 0.25); // smooth scaling
-            const origin = this.calculateZoomOrigin(e.clientX, e.clientY);
+            const origin = this.calculateZoomOrigin(e.currentTarget as HTMLElement, e.clientX, e.clientY);
             this.adjustZoom(factor, origin);
         }, { passive: false });
     }
 
-    private calculateZoomOrigin(clientX: number, clientY: number) {
-        const parent = this.imgEl!.parentElement;
-        const rect = parent!.getBoundingClientRect();
-        const style = window.getComputedStyle(parent!);
-        const paddings = { left: parseFloat(style.paddingLeft), top: parseFloat(style.paddingTop) };
-        const cx = clientX - rect.left - paddings.left;
-        const cy = clientY - rect.top - paddings.top;
+    private calculateZoomOrigin(container: HTMLElement, clientX: number, clientY: number) {
+        const rect = container.getBoundingClientRect();
+        const cx = clientX - rect.left;
+        const cy = clientY - rect.top;
         return { x: cx, y: cy };
     }
 
@@ -229,7 +226,7 @@ class ImageViewer implements ViewerInstance {
                 this.isPanning = false;
                 this.multiTouchDist = this.distance(e.touches[0], e.touches[1]);
                 const midpoint = this.midpoint(e.touches[0], e.touches[1]);
-                this.origin = this.calculateZoomOrigin(midpoint.x, midpoint.y);
+                this.origin = this.calculateZoomOrigin(e.currentTarget as HTMLElement, midpoint.x, midpoint.y);
                 e.preventDefault();
             }
         }, { passive: false });

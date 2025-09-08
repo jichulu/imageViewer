@@ -23,6 +23,8 @@ A lightweight, zero‑dependency TypeScript image viewer: modal overlay, zoom, d
 ## Live Demo
 https://jichulu.github.io/imageViewer/
 
+![ImageViewer](image.jpg)
+
 ## Install
 ```bash
 npm i @lujichu/image-viewer
@@ -35,7 +37,11 @@ yarn add @lujichu/image-viewer
 ## Basic Usage (bundler / ESM)
 ```ts
 import { createImageViewer } from '@lujichu/image-viewer';
-import '@lujichu/image-viewer/css/viewer.css';
+// Choose ONE of the following (depending on your bundler configuration):
+// If respecting the "exports" map (recommended):
+import '@lujichu/image-viewer/viewer.css';
+// Or direct path (works universally):
+// import '@lujichu/image-viewer/dist/css/viewer.css';
 
 createImageViewer({ scope: 'article' });
 ```
@@ -65,7 +71,7 @@ createImageViewer({
 ```
 
 ## IIFE (Global) Usage (no modules / legacy script tag)
-Use the pre-bundled IIFE build which exposes a global `ImageViewer` object containing both the class and the factory function.
+Use the pre-bundled IIFE build which exposes a global `ImageViewer` object containing the factory function.
 
 ```html
 <link rel="stylesheet" href="https://unpkg.com/@lujichu/image-viewer/dist/css/viewer.css" />
@@ -77,14 +83,14 @@ Use the pre-bundled IIFE build which exposes a global `ImageViewer` object conta
 <!-- Load AFTER the images / or place before </body> -->
 <script src="https://unpkg.com/@lujichu/image-viewer/dist/js/viewer.global.js"></script>
 <script>
-  // Option 1: use factory
+  // Use factory
   ImageViewer.createImageViewer({ scope: '#gallery' });
 </script>
 ```
 
 Notes:
 - Global name: `ImageViewer`
-- Exports: `ImageViewer.createImageViewer` (factory)
+- Available: `ImageViewer.createImageViewer` (the class itself is intentionally not exposed)
 - Include the CSS file separately (not inlined)
 - Call after DOM is ready (e.g. `DOMContentLoaded`) if script is in `<head>`
 
@@ -100,28 +106,36 @@ Notes:
 ## Local Dev (clone repo)
 ```powershell
 npm install
+# Development (watch):
+npm run dev
+# Production build:
 npm run build
 ```
-Build output is in `dist/`.
+Build output is in `dist/` (JS + CSS).
 
 ## API
 ```ts
 createImageViewer(options?: ViewerOptions): ImageViewer
 
 interface ViewerOptions {
-  scope?: string | HTMLElement; // DOM scan scope
-  thumbnails?: boolean;         // Show thumbnail strip
-  keyboard?: boolean;           // Enable keyboard navigation
-  wheelZoom?: boolean;          // Enable direct wheel zoom
-  className?: string;           // Extra class on root
-  onOpen?: () => void;
-  onClose?: () => void;
-  images?: { src: string; alt?: string; title?: string }[]; // Provide images directly
-  filter?: (img: HTMLImageElement) => boolean;              // Filter which <img> elements are included
-  minZoom?: number; // default 0.25
-  maxZoom?: number; // default 8
+  scope?: string | HTMLElement;                 // DOM scan scope (default: document)
+  thumbnails?: boolean;                         // Show thumbnail strip (default true)
+  keyboard?: boolean;                           // Enable keyboard navigation (default true)
+  wheelZoom?: boolean;                          // Mouse wheel / touchpad direct zoom (default true)
+  className?: string;                           // Extra class(es) on root element
+  onOpen?: () => void;                          // Callback when viewer opens
+  onClose?: () => void;                         // Callback when viewer closes
+  images?: { src: string; alt?: string; title?: string }[]; // Provide images directly (skips DOM scan)
+  filter?: (img: HTMLImageElement) => boolean;  // Filter which <img> elements are included
+  minZoom?: number;                             // Minimum zoom (default 0.25)
+  maxZoom?: number;                             // Maximum zoom (default 8)
 }
 ```
+
+### Notes
+- Multiple independent instances can be created (factory is not a singleton).
+- `images` array order defines navigation order when provided.
+- When scanning the DOM, dynamically added/removed images are tracked automatically.
 
 ## License
 MIT

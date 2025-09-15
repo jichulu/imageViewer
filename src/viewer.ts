@@ -68,6 +68,7 @@ class ImageViewer implements ViewerInstance {
             nodes.forEach(node => {
                 if (node.nodeType !== 1) return;
                 const el = node as Element;
+                if (el instanceof HTMLElement && el.closest('.iv-backdrop')) return;
                 if (el.tagName === 'IMG') fn(el as HTMLImageElement);
                 el.querySelectorAll?.('img').forEach(img => fn(img as HTMLImageElement));
             });

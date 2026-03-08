@@ -18,7 +18,8 @@ const DEFAULTS: Required<Omit<ViewerOptions, 'onOpen' | 'onClose' | 'images' | '
     onClose: undefined,
     images: undefined,
     minZoom: 0.25,
-    maxZoom: 8
+    maxZoom: 8,
+    previewContext: document,
 };
 
 class ImageViewer implements ViewerInstance {
@@ -38,10 +39,12 @@ class ImageViewer implements ViewerInstance {
     private origin = { x: 0, y: 0 }; // pinch origin
     private clickMoved = false; // track if dragged to suppress click-close
     private disposes: [fn: () => void, close: boolean][] = []; // event unbinders
+    private previewContext: Document;
 
     constructor(opts: ViewerOptions = {}) {
         const scope = typeof opts.scope === 'string' ? document.querySelector<HTMLElement>(opts.scope) : opts.scope ?? null;
         this.options = { ...DEFAULTS, ...opts, scope };
+        this.previewContext = this.options.previewContext;
         this.collect();
         this.observeNewImages();
     }
@@ -306,9 +309,9 @@ class ImageViewer implements ViewerInstance {
         this.index = Math.min(Math.max(0, startIndex), this.images.length - 1);
         if (this.backdrop) return;
 
-        document.body.classList.add('iv-lock');
+        this.previewContext.body.classList.add('iv-lock');
         // Build from template
-        const wrap = document.createElement('div');
+        const wrap = this.previewContext.createElement('div');
         wrap.innerHTML = backdropTemplate.trim();
         const backdrop = wrap.firstElementChild as HTMLElement | null;
         if (!backdrop) return;
@@ -349,7 +352,7 @@ class ImageViewer implements ViewerInstance {
                 }
             });
         });
-        document.body.appendChild(backdrop);
+        this.previewContext.body.appendChild(backdrop);
         requestAnimationFrame(() => backdrop.classList.add('iv-active'));
         this.backdrop = backdrop;
         this.imgEl = imgEl;
@@ -376,7 +379,7 @@ class ImageViewer implements ViewerInstance {
             bd.remove();
             this.backdrop = undefined;
             this.imgEl = undefined;
-            document.body.classList.remove('iv-lock');
+            this.previewContext.body.classList.remove('iv-lock');
             this.options.onClose?.();
         };
         bd.addEventListener('transitionend', done);

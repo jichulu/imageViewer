@@ -31,6 +31,8 @@ export interface ViewerOptions {
     minZoom?: number;
     /** Maximum zoom level (e.g. 2 = 200%) default 8 */
     maxZoom?: number;
+    /** Document context for preview (default: current document) */
+    previewContext?: Document;
 }
 
 export interface ViewerInstance {

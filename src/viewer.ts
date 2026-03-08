@@ -173,8 +173,8 @@ class ImageViewer implements ViewerInstance {
                 case '0': this.resetTransform(); break;
             }
         };
-        window.addEventListener('keydown', handle, { passive: true });
-        this.disposes.push([() => window.removeEventListener('keydown', handle), true]);
+        this.previewContext.addEventListener('keydown', handle, { passive: true });
+        this.disposes.push([() => this.previewContext.removeEventListener('keydown', handle), true]);
     }
 
     private installWheel(stage: HTMLElement) {
@@ -206,7 +206,7 @@ class ImageViewer implements ViewerInstance {
             this.clickMoved = false;
             stage.classList.add('iv-grabbing');
         });
-        window.addEventListener('mousemove', e => {
+        this.previewContext.addEventListener('mousemove', e => {
             if (!this.isPanning) return;
             const dx = e.clientX - this.pointerStart.x;
             const dy = e.clientY - this.pointerStart.y;
@@ -214,7 +214,7 @@ class ImageViewer implements ViewerInstance {
             if (Math.abs(dx) > 3 || Math.abs(dy) > 3) this.clickMoved = true;
             this.applyTransform();
         });
-        window.addEventListener('mouseup', () => {
+        this.previewContext.addEventListener('mouseup', () => {
             this.isPanning = false;
             stage.classList.remove('iv-grabbing');
         });

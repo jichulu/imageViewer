@@ -44,7 +44,7 @@ class ImageViewer implements ViewerInstance {
     constructor(opts: ViewerOptions = {}) {
         const scope = typeof opts.scope === 'string' ? document.querySelector<HTMLElement>(opts.scope) : opts.scope ?? null;
         this.options = { ...DEFAULTS, ...opts, scope };
-        this.previewContext = this.options.previewContext;
+        this.previewContext = this.options.previewContext || document;
         this.collect();
         this.observeNewImages();
     }
